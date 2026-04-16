@@ -1,0 +1,63 @@
+{
+  "metrics": {
+    "idleTime": {
+      "definition": "Time in milliseconds since the last user interaction (click, keypress).",
+      "threshold": 60000,
+      "controls": "Triggers the Idle Nudge to re-engage the user."
+    },
+    "timeBetweenQuests": {
+      "definition": "Array storing the duration in ms between the last 5 quest completions.",
+      "thresholds": {
+        "RAPID_COMPLETION_MS": 30000,
+        "SLOW_COMPLETION_MS": 300000
+      },
+      "controls": "Session pacing evaluation, Momentum Burn activation, System Mode transitions, and micro-adjustments to Invisible Difficulty Scaling."
+    },
+    "consecutiveRapidCompletions": {
+      "definition": "Counter tracking how many quests were completed within the RAPID_COMPLETION_MS threshold of each other.",
+      "threshold": 2,
+      "controls": "Triggers Momentum Burn (Double XP) and transitions the system into Pressure Mode (>= 3)."
+    },
+    "tasksAddedThisSession": {
+      "definition": "Counter for total quests registered since the session began (Daily Login).",
+      "threshold": 4,
+      "controls": "Combined with 0 completions, it detects Task Overload and triggers Recovery Mode."
+    },
+    "questsCompletedThisSession": {
+      "definition": "Counter for total quests completed since the session began.",
+      "controls": "Used as the denominator/balance against tasksAddedThisSession to evaluate cognitive load and system progression."
+    },
+    "sessionIntensity": {
+      "definition": "A 0-100 scale evaluating the density of actions taken per minute.",
+      "controls": "Modifies the `adaptiveDifficulty` scaling (1.0 to 1.5) for base XP multiplier."
+    },
+    "peakCombo": {
+      "definition": "The highest rapid-action combo multiplier reached during the session (managed by VisualEngine).",
+      "threshold": 3,
+      "controls": "Serves as an alternate trigger for Pressure Mode."
+    },
+    "adaptiveDifficulty": {
+      "definition": "A multiplier applied to base XP rewards based on session performance. Formula: 1.0 + (quests * 0.02) + (sessionXP * 0.001).",
+      "limits": {
+        "min": 0.5,
+        "max": 1.5
+      },
+      "controls": "The overall inflation rate of the user's XP economy to keep them in flow."
+    },
+    "systemMode": {
+      "definition": "The current personality and UI state of the OS.",
+      "values": ["Neutral", "Pressure", "Recovery"],
+      "controls": "UI color palette, glow effects, nudge messaging tone, and macro-adjustments to Invisible Difficulty Scaling (Crit Chance and XP Multiplier)."
+    }
+  },
+  "safety_constraints": {
+    "MAX_NUDGES_PER_SESSION": {
+      "definition": "The absolute limit on how many times the system can interrupt the user with a nudge.",
+      "value": 5
+    },
+    "NUDGE_COOLDOWN_MS": {
+      "definition": "The minimum time required between system nudges.",
+      "value": 120000
+    }
+  }
+}

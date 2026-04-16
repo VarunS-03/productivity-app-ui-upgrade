@@ -1,0 +1,515 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans)}
+.page{display:none;padding:0 0 2rem}
+.page.active{display:block}
+.nav-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1.5rem;border-bottom:0.5px solid var(--color-border-tertiary);padding-bottom:12px}
+.tab-btn{padding:6px 14px;font-size:13px;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);background:transparent;color:var(--color-text-secondary);cursor:pointer;transition:all .15s}
+.tab-btn.active,.tab-btn:hover{background:var(--color-background-secondary);color:var(--color-text-primary)}
+.tab-btn.active{border-color:var(--color-border-primary);font-weight:500}
+h2{font-size:18px;font-weight:500;color:var(--color-text-primary);margin-bottom:1rem}
+h3{font-size:15px;font-weight:500;color:var(--color-text-primary);margin:1.5rem 0 0.5rem}
+p{font-size:14px;color:var(--color-text-secondary);line-height:1.7;margin-bottom:0.75rem}
+.issue-card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:1rem 1.25rem;margin-bottom:0.75rem}
+.issue-header{display:flex;align-items:flex-start;gap:10px;margin-bottom:6px}
+.badge{display:inline-block;font-size:11px;font-weight:500;padding:3px 8px;border-radius:var(--border-radius-md);white-space:nowrap;flex-shrink:0}
+.sev-crit{background:var(--color-background-danger);color:var(--color-text-danger)}
+.sev-high{background:var(--color-background-warning);color:var(--color-text-warning)}
+.sev-med{background:var(--color-background-info);color:var(--color-text-info)}
+.sev-low{background:var(--color-background-success);color:var(--color-text-success)}
+.issue-title{font-size:14px;font-weight:500;color:var(--color-text-primary)}
+.issue-body{font-size:13px;color:var(--color-text-secondary);line-height:1.65}
+.fix-card{background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:1rem 1.25rem;margin-bottom:0.75rem}
+.fix-meta{display:flex;gap:8px;align-items:center;margin-bottom:6px;flex-wrap:wrap}
+.tag-time{font-size:11px;font-weight:500;padding:2px 8px;border-radius:var(--border-radius-md);background:var(--color-background-tertiary);color:var(--color-text-secondary)}
+.tag-impact{font-size:11px;font-weight:500;padding:2px 8px;border-radius:var(--border-radius-md)}
+.imp-high{background:var(--color-background-success);color:var(--color-text-success)}
+.imp-med{background:var(--color-background-info);color:var(--color-text-info)}
+.fix-title{font-size:14px;font-weight:500;color:var(--color-text-primary);margin-bottom:4px}
+.fix-why{font-size:13px;color:var(--color-text-secondary);line-height:1.6}
+.ranked-list{counter-reset:r}
+.ranked-item{counter-increment:r;display:flex;gap:12px;padding:10px 0;border-bottom:0.5px solid var(--color-border-tertiary)}
+.ranked-item:last-child{border:none}
+.rank-num{font-size:22px;font-weight:500;color:var(--color-border-secondary);flex-shrink:0;width:28px;line-height:1.2}
+.rank-content h4{font-size:14px;font-weight:500;color:var(--color-text-primary);margin-bottom:3px}
+.rank-content p{font-size:13px;color:var(--color-text-secondary);margin:0;line-height:1.6}
+.screen-mock{background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:1.25rem;max-width:380px;margin:0 auto}
+.mock-header{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:8px 12px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between}
+.mock-hud-pill{display:flex;gap:8px;font-size:11px;font-weight:500;color:var(--color-text-secondary)}
+.mock-hud-stat{background:var(--color-background-info);color:var(--color-text-info);border-radius:20px;padding:2px 8px;font-size:11px;font-weight:500}
+.mock-brand{font-size:13px;font-weight:500;color:var(--color-text-primary)}
+.mock-card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:12px;margin-bottom:8px}
+.mock-card-label{font-size:10px;font-weight:500;color:var(--color-text-tertiary);letter-spacing:.05em;margin-bottom:4px}
+.mock-card-title{font-size:15px;font-weight:500;color:var(--color-text-primary);margin-bottom:4px}
+.mock-card-sub{font-size:12px;color:var(--color-text-secondary)}
+.mock-cta{background:var(--color-background-primary);border:2px solid var(--color-border-info);color:var(--color-text-info);border-radius:var(--border-radius-md);padding:10px 0;text-align:center;font-size:13px;font-weight:500;margin-bottom:8px;cursor:pointer}
+.mock-xp-bar{height:6px;background:var(--color-border-tertiary);border-radius:3px;margin-top:6px;overflow:hidden}
+.mock-xp-fill{height:100%;width:12%;background:var(--color-text-info);border-radius:3px}
+.mock-stat-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px}
+.mock-stat{background:var(--color-background-tertiary);border-radius:var(--border-radius-md);padding:8px;text-align:center}
+.mock-stat-val{font-size:18px;font-weight:500;color:var(--color-text-primary);display:block}
+.mock-stat-key{font-size:10px;color:var(--color-text-tertiary);text-transform:uppercase;letter-spacing:.05em}
+.mock-bottom-nav{background:var(--color-background-primary);border-top:0.5px solid var(--color-border-tertiary);border-radius:0 0 var(--border-radius-md) var(--border-radius-md);padding:8px 0;display:flex;justify-content:space-around}
+.mock-nav-item{font-size:10px;color:var(--color-text-tertiary);text-align:center;flex:1;cursor:pointer}
+.mock-nav-item.active{color:var(--color-text-info)}
+.mock-nav-icon{font-size:14px;display:block;margin-bottom:2px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.warn-block{border-left:3px solid var(--color-border-warning);background:var(--color-background-warning);padding:10px 12px;border-radius:0 var(--border-radius-md) var(--border-radius-md) 0;margin:0.75rem 0}
+.warn-block p{color:var(--color-text-warning);margin:0;font-size:13px}
+.code-pill{display:inline-block;font-family:var(--font-mono);font-size:12px;background:var(--color-background-tertiary);color:var(--color-text-secondary);padding:1px 6px;border-radius:4px}
+.divider{height:0.5px;background:var(--color-border-tertiary);margin:1.5rem 0}
+.section-note{font-size:12px;color:var(--color-text-tertiary);margin-top:4px;font-style:italic}
+.vs-row{display:flex;gap:8px;margin-bottom:8px;align-items:flex-start}
+.vs-label{font-size:11px;font-weight:500;flex-shrink:0;padding:3px 8px;border-radius:var(--border-radius-md);margin-top:2px}
+.vs-app{background:var(--color-background-success);color:var(--color-text-success)}
+.vs-this{background:var(--color-background-danger);color:var(--color-text-danger)}
+.vs-text{font-size:13px;color:var(--color-text-secondary);line-height:1.6}
+</style>
+
+<h2 style="font-size:20px;margin-bottom:4px">Hunter System — UX Audit</h2>
+<p style="margin-bottom:1rem;font-size:13px">Solo Leveling RPG Quest Tracker · Full product teardown</p>
+
+<div class="nav-tabs">
+  <button class="tab-btn active" onclick="show('context')">Context</button>
+  <button class="tab-btn" onclick="show('visual')">Visual system</button>
+  <button class="tab-btn" onclick="show('ux')">UX + flow</button>
+  <button class="tab-btn" onclick="show('psych')">Psychology</button>
+  <button class="tab-btn" onclick="show('fixes')">Fixes</button>
+  <button class="tab-btn" onclick="show('benchmark')">Benchmarks</button>
+  <button class="tab-btn" onclick="show('redesign')">Redesign</button>
+</div>
+
+<div id="page-context" class="page active">
+  <h2>Context analysis</h2>
+  <div class="issue-card">
+    <div class="issue-title" style="margin-bottom:6px">What this app is</div>
+    <div class="issue-body">A Solo Leveling manhwa-themed gamified productivity tracker. Users log daily tasks as "quests", earn XP and Gold, level up, maintain login streaks, unlock dungeons, and purchase items with earned gold. It is entirely local/offline-first — save data is JSON imported/exported. There is no backend or account system.</div>
+  </div>
+  <div class="grid-2">
+    <div class="issue-card">
+      <div class="issue-title" style="margin-bottom:4px">Target user</div>
+      <div class="issue-body">Solo Leveling fans aged 16–28. Productivity seekers who want gamification. Heavy mobile users. Likely have tried and abandoned habit apps before.</div>
+    </div>
+    <div class="issue-card">
+      <div class="issue-title" style="margin-bottom:4px">Immediate user goal</div>
+      <div class="issue-body">Log today's tasks, hit Daily Login, complete quests, see XP/level progress, not break their streak.</div>
+    </div>
+  </div>
+  <div class="issue-card">
+    <div class="issue-title" style="margin-bottom:4px">What business success looks like</div>
+    <div class="issue-body">Daily active usage (DAU), streak retention, return rate after day 3 (the critical habit cliff), and organic sharing through the RPG identity the user builds. If monetized later: converting engaged users to premium via gold economy or cosmetics.</div>
+  </div>
+</div>
+
+<div id="page-visual" class="page">
+  <h2>Visual system flaws</h2>
+
+  <div class="issue-card">
+    <div class="issue-header">
+      <span class="badge sev-crit">Critical</span>
+      <div class="issue-title">Header has 9 competing elements — zero hierarchy</div>
+    </div>
+    <div class="issue-body">The HUD header contains: brand ("NEXUS⬡SYS"), LVL stat, STRK stat, a spacer, hunter name, system status, a second streak display, EOD countdown, save indicator, and bonus gate button. That is 9–10 distinct UI objects on one line. No visual grouping, no size hierarchy. On a 375px phone this is illegible noise. Streak is duplicated: <span class="code-pill">hud-strk</span> and <span class="code-pill">header-streak</span> both exist.</div>
+  </div>
+
+  <div class="issue-card">
+    <div class="issue-header">
+      <span class="badge sev-crit">Critical</span>
+      <div class="issue-title">"SYSTEM OFFLINE" as the default state label is alarming</div>
+    </div>
+    <div class="issue-body">Before daily login, <span class="code-pill">header-status</span> displays "SYSTEM OFFLINE". To any new user, this looks like a broken app. In a gamified context, negative system-state language creates anxiety, not engagement. Apps like Duolingo never tell you the system is broken — they always present an inviting, ready state.</div>
+  </div>
+
+  <div class="issue-card">
+    <div class="issue-header">
+      <span class="badge sev-high">High</span>
+      <div class="issue-title">4 typefaces — far too many for coherent design</div>
+    </div>
+    <div class="issue-body">Black Ops One, Rajdhani, Bebas Neue, and Share Tech Mono are all loaded. No top-tier product uses more than 2 typefaces. Each additional font fractures visual identity and increases load time. Pick two: one display font for headers/brand moments, one workhorse for UI copy.</div>
+  </div>
+
+  <div class="issue-card">
+    <div class="issue-header">
+      <span class="badge sev-high">High</span>
+      <div class="issue-title">ALL CAPS throughout — fatiguing for body text</div>
+    </div>
+    <div class="issue-body">ALL CAPS works for badge labels and nav items. Used for multi-sentence descriptions ("Forged in the abyss. Increases quest XP by 10% when equipped. Binds to Shadow Monarch lineage."), it becomes physically uncomfortable to read. Mixed-case prose inside an ALL CAPS UI shell would give the app more visual range and readability.</div>
+  </div>
+
+  <div class="issue-card">
+    <div class="issue-header">
+      <span class="badge sev-high">High</span>
+      <div class="issue-title">Navigation labels are cryptic abbreviations</div>
+    </div>
+    <div class="issue-body">ARS, HQ, QST, DNG — none of these are universally understood. "HQ" reads as home base in military/corporate contexts, but "ARS" as Arsenal is not intuitive. A new user seeing these 4 tabs has no mental model of the app structure. Add icons and use full words or clear short labels: Shop, Home, Quests, Dungeon.</div>
+  </div>
+
+  <div class="issue-card">
+    <div class="issue-header">
+      <span class="badge sev-med">Medium</span>
+      <div class="issue-title">Navigation is placed mid-screen, not at the bottom</div>
+    </div>
+    <div class="issue-body">On mobile, the thumb's natural reach is the bottom of the screen. The nav sitting between the header and content forces awkward two-handed use. iOS and Android both have established bottom-tab-bar patterns for a reason. This app is viewport-fit:cover, confirming it's mobile-first — yet ignores the most fundamental mobile navigation pattern.</div>
+  </div>
+
+  <div class="issue-card">
+    <div class="issue-header">
+      <span class="badge sev-med">Medium</span>
+      <div class="issue-title">Inline styles scattered throughout — broken design system</div>
+    </div>
+    <div class="issue-body">Dozens of <span class="code-pill">style="margin-top:16px"</span>, <span class="code-pill">style="width:100%"</span>, <span class="code-pill">style="font-size:8px"</span> inline overrides throughout the HTML. Multiple button archetypes: <span class="code-pill">sys-btn</span>, <span class="code-pill">buy-btn</span>, <span class="code-pill">cmd-btn</span>, <span class="code-pill">gate-open-btn</span>, <span class="code-pill">enter-btn</span>. No single source of truth for spacing or component state.</div>
+  </div>
+
+  <div class="issue-card">
+    <div class="issue-header">
+      <span class="badge sev-low">Low</span>
+      <div class="issue-title">Empty drag-drop zones make the app look unfinished</div>
+    </div>
+    <div class="issue-body">Every tab has large "DRAG IMAGE HERE" placeholder zones for manhwa art. Until images are loaded, the app looks like a wireframe. This is an intentional customization feature, but the empty-state presentation needs a more atmospheric fallback — a low-opacity procedural gradient or SVG illustration — so the app feels polished by default.</div>
+  </div>
+</div>
+
+<div id="page-ux" class="page">
+  <h2>UX + flow analysis</h2>
+
+  <div class="issue-card">
+    <div class="issue-header">
+      <span class="badge sev-crit">Critical</span>
+      <div class="issue-title">The HQ tab is doing the work of 4 screens</div>
+    </div>
+    <div class="issue-body">Sections on one tab: Awakening Gate + Onboarding Panel + Mission Control + Quick Register + Hero Image Drop + Status Window (with 5 sub-bars) + Commands + Activity Log + EOD Summary + Achievements + Skill Tree + Data Management. A user lands here and has no idea where to focus. This isn't "headquarters" — it's a storage closet. The critical action (Daily Login) is buried three scrolls down in "Commands" in addition to appearing in Mission Control.</div>
+  </div>
+
+  <div class="issue-card">
+    <div class="issue-header">
+      <span class="badge sev-crit">Critical</span>
+      <div class="issue-title">Duplicate name-entry flows create confusion</div>
+    </div>
+    <div class="issue-body">There are two separate hunter name input flows: the <span class="code-pill">first-contact-backdrop</span> modal (first run) AND the <span class="code-pill">hunter-name-input-inline</span> inside the HQ awakening gate section. A returning user who hasn't done daily login sees the awakening gate with a rename input — they may think they need to re-enter their name every day. The awakening gate section should not show name entry once first contact is complete.</div>
+  </div>
+
+  <div class="issue-card">
+    <div class="issue-header">
+      <span class="badge sev-crit">Critical</span>
+      <div class="issue-title">"↺ NEW DAY SIM" button is visible in production UI</div>
+    </div>
+    <div class="issue-body">The <span class="code-pill">end-day-sim-btn</span> sits openly in the Commands row alongside Daily Login and End of Day. This is a developer testing tool. To any user, it signals the app is unfinished, in beta, or broken. It also breaks immersion instantly. This must be hidden — accessible only via a dev mode, a secret gesture, or the URL hash. This single button erodes trust more than any other element.</div>
+  </div>
+
+  <div class="issue-card">
+    <div class="issue-header">
+      <span class="badge sev-crit">Critical</span>
+      <div class="issue-title">Daily login is a mandatory gate but the app doesn't explain why</div>
+    </div>
+    <div class="issue-body">A returning user who opens the app to quickly add a quest sees "SYSTEM OFFLINE" and can't interact until they hit Daily Login. There's no explanation visible — the Mission Control copy ("Login to unlock quests, earn XP, and protect your streak") only appears inside HQ after scrolling. The gate should be surfaced as a persistent banner or bottom sheet, not buried in a section the user has to find.</div>
+  </div>
+
+  <div class="issue-card">
+    <div class="issue-header">
+      <span class="badge sev-high">High</span>
+      <div class="issue-title">XP/progress data is represented 5 times on one screen</div>
+    </div>
+    <div class="issue-body">On HQ: stat grid cell (XP), stat grid cell (Level), stat grid cell (Streak), stat grid cell (Gold) + XP bar + Gold bar + Streak segments + Power bar. The same data is displayed in a 2×2 grid AND as progress bars. This wastes vertical space and dilutes the "aha" feeling of progress — spreading a dopamine hit across 5 elements instead of one powerful one.</div>
+  </div>
+
+  <div class="issue-card">
+    <div class="issue-header">
+      <span class="badge sev-high">High</span>
+      <div class="issue-title">EOD Summary panel is always rendered, showing zeros</div>
+    </div>
+    <div class="issue-body">The <span class="code-pill">end-of-day-summary</span> panel shows "Original XP: 0, Failed Quests: 0, Penalty: 0%" by default. A new user sees this and wonders if they already failed something. This should only appear after the End of Day action is triggered — hidden until needed.</div>
+  </div>
+
+  <div class="issue-card">
+    <div class="issue-header">
+      <span class="badge sev-high">High</span>
+      <div class="issue-title">Reset Profile sits next to Export/Import with no protective distance</div>
+    </div>
+    <div class="issue-body">Inside Data Management: Export Save | Import Save | ⚠ RESET PROFILE — three side-by-side buttons. The warning text below ("Reset applies permanent penalties") is vague. There's no separate confirmation modal, no input-to-confirm pattern. A user doing a routine export could accidentally tap Reset Profile on a small screen. Destructive actions must be isolated — different section, different visual weight, double confirmation.</div>
+  </div>
+
+  <div class="issue-card">
+    <div class="issue-header">
+      <span class="badge sev-med">Medium</span>
+      <div class="issue-title">Dungeon tab is locked with no visible explanation at nav level</div>
+    </div>
+    <div class="issue-body">The DNG tab shows as locked (<span class="code-pill">tab-locked</span> class) in the nav. The unlock requirement (Level 5 + Rank M) is only discoverable by somehow navigating inside the dungeon page. On mobile, a locked tab with no tooltip or badge showing progress is a dead end that creates confusion. A small "LVL 5 to unlock" sub-label under the tab button would fix this.</div>
+  </div>
+
+  <div class="issue-card">
+    <div class="issue-header">
+      <span class="badge sev-med">Medium</span>
+      <div class="issue-title">Bonus Gate is in the header AND the quest page with no explanation of what it is</div>
+    </div>
+    <div class="issue-body">A new user sees <span class="code-pill">◆ GATE</span> pulsing in the header. They have no context. The gate mechanic — a bonus reward after completing all quests — is never explained in the UI. There's no tooltip, no first-run explanation, no contextual help. This is a compelling mechanic being wasted because users don't know it exists until they stumble into it.</div>
+  </div>
+
+  <h3>Missing states</h3>
+  <div class="issue-body" style="margin-top:8px">
+    <div class="warn-block"><p>Empty quest list — no visible empty state. A new user on the Quests tab sees only the input field with no context about what quests do or examples.</p></div>
+    <div class="warn-block"><p>No achievements until earned — the achievements grid renders empty with no "earn your first achievement" prompt.</p></div>
+    <div class="warn-block"><p>No error handling visible for malformed JSON imports.</p></div>
+    <div class="warn-block"><p>No "all quests complete" celebration state. After completing everything, the quest list just shows completed items. No victory moment.</p></div>
+    <div class="warn-block"><p>The intro overlay plays every launch — there's no "don't show again" mechanism besides the skip button, which is re-shown every session.</p></div>
+  </div>
+</div>
+
+<div id="page-psych" class="page">
+  <h2>Psychological analysis</h2>
+
+  <div class="issue-card">
+    <div class="issue-header">
+      <span class="badge sev-crit">Critical</span>
+      <div class="issue-title">Loss aversion is misfired — the Streak Shield neutralizes it</div>
+    </div>
+    <div class="issue-body">Streaks are the most powerful retention mechanic in habit apps (see Duolingo). They work through loss aversion: "don't break what you've built." But this app offers a Streak Shield item in the Arsenal shop that preserves streaks automatically on missed days. This converts loss aversion into false security. Users who buy the shield stop feeling urgency to log in. Duolingo sells streak freezes but gates them behind significant friction and shows them as emergency items — not products on a shelf.</div>
+  </div>
+
+  <div class="issue-card">
+    <div class="issue-header">
+      <span class="badge sev-high">High</span>
+      <div class="issue-title">No destination — users can't see where they're going</div>
+    </div>
+    <div class="issue-body">What does Level 2 give you? What changes at Rank M? What's in the dungeon once you unlock it? None of these are answered in the UI. The skill tree shows locked nodes (Strike at Level 2, Guard at Level 3) but doesn't communicate why these matter. Motivation requires a visible destination. The app creates a treadmill, not a journey.</div>
+  </div>
+
+  <div class="issue-card">
+    <div class="issue-header">
+      <span class="badge sev-high">High</span>
+      <div class="issue-title">The gold economy is confused — gold serves two incompatible purposes</div>
+    </div>
+    <div class="issue-body">The Gold progress bar in HQ is labeled "GOLD TOWARD RANK" — implying gold is used to rank up. But the Arsenal shop sells items for gold. If ranking up requires gold AND buying items requires gold, users face a resource competition they have no guidance on resolving. Is rank-up gold separate? Is item gold deducted from rank progress? This ambiguity kills spending decisions.</div>
+  </div>
+
+  <div class="issue-card">
+    <div class="issue-header">
+      <span class="badge sev-high">High</span>
+      <div class="issue-title">The UI assumes knowledge of Solo Leveling lore</div>
+    </div>
+    <div class="issue-body">Shadow Army, Gates, Dungeons, Rank M, Shadow Monarch, Hunter Designation — these are meaningful to Solo Leveling fans but opaque to anyone else. The app makes zero attempt to bridge the lore to the productivity use case. A new user who hasn't read the manhwa has no mental model. Even fans need occasional reminders of what in-app terms mean in productivity terms.</div>
+  </div>
+
+  <div class="issue-card">
+    <div class="issue-header">
+      <span class="badge sev-med">Medium</span>
+      <div class="issue-title">Passive UI — no urgency triggers during the day</div>
+    </div>
+    <div class="issue-body">The only urgency trigger is the EOD countdown clock in the header. But it's a passive number — it doesn't change color as the deadline approaches, doesn't pulse, doesn't send a notification. Duolingo's streak counter turns red and shows "at risk" when you haven't practiced. This app has the architecture for urgency (the countdown exists) but the emotional escalation is absent.</div>
+  </div>
+
+  <div class="issue-card">
+    <div class="issue-header">
+      <span class="badge sev-med">Medium</span>
+      <div class="issue-title">The intro overlay every launch erodes the "cool" factor fast</div>
+    </div>
+    <div class="issue-body">The awakening overlay ("INITIALISING PROTOCOLS...") is thrilling on day 1. By day 7 it is dead weight. The skip button helps but the user must actively dismiss it every session. A first-run-only intro with a quicker transition into the app would preserve the immersion without creating friction. Consider: short 0.5s boot animation vs. full overlay. Reserve the full sequence for actual level-up or rank-up moments.</div>
+  </div>
+</div>
+
+<div id="page-fixes" class="page">
+  <h2>Fixes by effort + impact</h2>
+
+  <h3>Quick wins — under 1 hour</h3>
+
+  <div class="fix-card">
+    <div class="fix-meta"><span class="tag-time">15 min</span><span class="tag-impact imp-high">High impact</span></div>
+    <div class="fix-title">1. Remove the "NEW DAY SIM" button from the UI</div>
+    <div class="fix-why">Hide it behind a developer flag (<span class="code-pill">?dev=1</span> URL param) or a long-press on the brand logo. Expected impact: immediate trust recovery for new users. This is the single fastest trust fix in the codebase.</div>
+  </div>
+
+  <div class="fix-card">
+    <div class="fix-meta"><span class="tag-time">10 min</span><span class="tag-impact imp-high">High impact</span></div>
+    <div class="fix-title">2. Change "SYSTEM OFFLINE" → "AWAKEN TO BEGIN"</div>
+    <div class="fix-why">Same semantic meaning, completely different emotional register. "Offline" signals broken. "Awaken to begin" is thematic and motivating. One string change. Impact: reduces new-user confusion and abandonment at first impression.</div>
+  </div>
+
+  <div class="fix-card">
+    <div class="fix-meta"><span class="tag-time">20 min</span><span class="tag-impact imp-high">High impact</span></div>
+    <div class="fix-title">3. Add icons and full labels to nav tabs</div>
+    <div class="fix-why">Replace ARS/HQ/QST/DNG with icon + word: ⚔ Shop · 🏠 Home · 📜 Quests · 🌀 Dungeon. Icons are processed faster than text. Expected impact: reduces navigation confusion for new users significantly, especially those not familiar with the game.</div>
+  </div>
+
+  <div class="fix-card">
+    <div class="fix-meta"><span class="tag-time">30 min</span><span class="tag-impact imp-high">High impact</span></div>
+    <div class="fix-title">4. Hide EOD summary by default — show only after End of Day fires</div>
+    <div class="fix-why">Add <span class="code-pill">display:none</span> to <span class="code-pill">#end-of-day-summary</span> by default. Toggle it visible only when End of Day action runs. Zero ambiguity for new users. Zero code change to logic — only state presentation.</div>
+  </div>
+
+  <div class="fix-card">
+    <div class="fix-meta"><span class="tag-time">20 min</span><span class="tag-impact imp-med">Medium impact</span></div>
+    <div class="fix-title">5. Add unlock tooltip to locked DNG tab</div>
+    <div class="fix-why">Show "Lvl 5 · Rank M" as a sub-label or tooltip on the locked dungeon tab. Users need to know what they're working toward at the navigation level, not just inside the dungeon page.</div>
+  </div>
+
+  <div class="fix-card">
+    <div class="fix-meta"><span class="tag-time">30 min</span><span class="tag-impact imp-med">Medium impact</span></div>
+    <div class="fix-title">6. Visually isolate the Reset Profile button</div>
+    <div class="fix-why">Move Reset to its own row below Export/Import, change its style to ghost-danger (outline only, red), and add a confirmation modal with "type RESET to confirm" before executing. Destructive action requires protective distance and friction.</div>
+  </div>
+
+  <div class="divider"></div>
+  <h3>Medium improvements — 1–2 days</h3>
+
+  <div class="fix-card">
+    <div class="fix-meta"><span class="tag-time">1 day</span><span class="tag-impact imp-high">High impact</span></div>
+    <div class="fix-title">7. Redesign HQ into 3 focused sections only</div>
+    <div class="fix-why">Keep: Status card (XP + streak + level in one compact row), Today's mission (mission control), and Quick Register. Everything else — Achievements, Skill Tree, Data Management — moves to a dedicated Profile/Settings tab. This removes 70% of HQ scroll and makes the primary action immediately visible. Expected impact: measurable drop in "daily login" completion time, higher daily activation rate.</div>
+  </div>
+
+  <div class="fix-card">
+    <div class="fix-meta"><span class="tag-time">4 hours</span><span class="tag-impact imp-high">High impact</span></div>
+    <div class="fix-title">8. Move nav to bottom, use standard mobile tab bar pattern</div>
+    <div class="fix-why">Standard iOS/Android bottom nav with icon + label. Thumb-reachable. The current mid-screen placement is architecturally awkward on mobile. Expected impact: faster navigation speed, lower mis-tap rate, aligns with every major mobile app the user has ever used.</div>
+  </div>
+
+  <div class="fix-card">
+    <div class="fix-meta"><span class="tag-time">1 day</span><span class="tag-impact imp-high">High impact</span></div>
+    <div class="fix-title">9. Add a "Next unlock" callout in the status card</div>
+    <div class="fix-why">Below the XP bar: "Strike ability unlocks at Level 2 — 88 XP away." Below the rank progress: "Dungeon unlocks at Rank M." Give users a visible destination at all times. This converts the XP grind from purposeless to purposeful. Directly inspired by how Duolingo shows what's in the next lesson tier.</div>
+  </div>
+
+  <div class="fix-card">
+    <div class="fix-meta"><span class="tag-time">6 hours</span><span class="tag-impact imp-high">High impact</span></div>
+    <div class="fix-title">10. Replace onboarding checklist with an interactive 3-step card flow</div>
+    <div class="fix-why">The current plain-text list "1. Use Daily Login... 2. Add at least one quest..." is weak. Replace with 3 swipeable onboarding cards with visuals and a progress dot indicator. Auto-advance to next card on completion of each step. This transforms first-run from reading a manual into feeling like starting the game.</div>
+  </div>
+
+  <div class="fix-card">
+    <div class="fix-meta"><span class="tag-time">3 hours</span><span class="tag-impact imp-med">Medium impact</span></div>
+    <div class="fix-title">11. Add urgency escalation to the EOD countdown</div>
+    <div class="fix-why">Under 4 hours remaining: countdown turns amber. Under 1 hour: turns red and pulses. Add a "X quests remain — complete them before midnight" text that appears when under 2 hours remain. This converts a passive clock into an active motivation trigger.</div>
+  </div>
+
+  <div class="divider"></div>
+  <h3>Major redesigns — high impact</h3>
+
+  <div class="fix-card">
+    <div class="fix-meta"><span class="tag-time">3–5 days</span><span class="tag-impact imp-high">High impact</span></div>
+    <div class="fix-title">12. Collapse status display from 5 bars to 1 "Hunter Card"</div>
+    <div class="fix-why">One compact card: Avatar/rank badge on the left, 3 stats inline (LVL / STRK / GOLD), one XP progress bar, and one "next unlock" line. That's all. Removes 4 redundant bars. The dopamine hit of filling a single bar is stronger than partially filling 5 bars simultaneously. This is the core loop visualization — it should feel satisfying, not bureaucratic.</div>
+  </div>
+
+  <div class="fix-card">
+    <div class="fix-meta"><span class="tag-time">1–2 days</span><span class="tag-impact imp-high">High impact</span></div>
+    <div class="fix-title">13. Add a "Focus Mode" — quest-only full-screen view</div>
+    <div class="fix-why">When a user has active quests and is in completion mode, offer a stripped-down view: just the quest list, a completion counter, and the timer. No header, no nav. Just "clear all quests." Trigger it from a quest-page button: "Enter Focus Mode." After completing all quests, explode into the celebration sequence. This is how Duolingo structures lessons — the completion experience should be its own mode.</div>
+  </div>
+
+  <div class="fix-card">
+    <div class="fix-meta"><span class="tag-time">2–3 days</span><span class="tag-impact imp-med">Medium impact</span></div>
+    <div class="fix-title">14. Clarify the gold economy with a glossary tooltip system</div>
+    <div class="fix-why">The "Gold Toward Rank" bar and the shop both use gold — clarify whether these are the same pool. Add tappable info icons (ⓘ) next to key mechanics (Gold, Rank, Shadow Army counter) that show a one-sentence explanation. This surfaces lore/mechanic context without cluttering the main UI. Makes the app accessible to non-Solo Leveling fans too.</div>
+  </div>
+</div>
+
+<div id="page-benchmark" class="page">
+  <h2>Competitive benchmarks</h2>
+  <p>Compared against Duolingo, Notion, and Spotify — the three top-tier apps in their categories most relevant to this app's design challenges.</p>
+
+  <h3>vs. Duolingo (retention + gamification master)</h3>
+  <div class="vs-row"><span class="vs-label vs-app">Duolingo</span><div class="vs-text">Home screen shows exactly one primary action: "Continue" or "Start lesson." Zero ambiguity about what to do next. Every session starts with one tap.</div></div>
+  <div class="vs-row"><span class="vs-label vs-this">This app</span><div class="vs-text">HQ shows 10+ sections. The primary action (Daily Login) requires scrolling to find in the Commands section, even though it also appears in Mission Control.</div></div>
+
+  <div class="vs-row"><span class="vs-label vs-app">Duolingo</span><div class="vs-text">Streak UI is dead simple: one flame emoji with one number. It turns red with "at risk" language when the user hasn't practiced. The emotional escalation is calibrated precisely.</div></div>
+  <div class="vs-row"><span class="vs-label vs-this">This app</span><div class="vs-text">Streak is shown in 3 places simultaneously. The EOD clock is passive. There's no emotional escalation as the deadline approaches. Streak Shield removes the consequence of breaking it.</div></div>
+
+  <div class="vs-row"><span class="vs-label vs-app">Duolingo</span><div class="vs-text">Completion celebration is a full-screen XP animation with confetti. The reward is unmissable. The loop is tight: lesson → celebration → next lesson hint. Users know exactly what they accomplished and what comes next.</div></div>
+  <div class="vs-row"><span class="vs-label vs-this">This app</span><div class="vs-text">Level-up event and rank-up event are well-designed visually. But day-to-day quest completion feedback is unclear — what happens when you check off a quest? Is there a per-quest celebration, or just XP accumulation?</div></div>
+
+  <h3 style="margin-top:1.5rem">vs. Notion (clarity of information architecture)</h3>
+  <div class="vs-row"><span class="vs-label vs-app">Notion</span><div class="vs-text">Empty states are inviting: "Start typing to create..." Every blank surface tells you what to do with it. Notion treats emptiness as potential, not absence.</div></div>
+  <div class="vs-row"><span class="vs-label vs-this">This app</span><div class="vs-text">Empty quest list, empty achievements grid, blank image drop zones — multiple surfaces that look unfinished rather than ready. Empty states are missed retention opportunities.</div></div>
+
+  <div class="vs-row"><span class="vs-label vs-app">Notion</span><div class="vs-text">Navigation is always visible and clearly labeled. Even first-time users can orient themselves within seconds because the information architecture is consistent and predictable.</div></div>
+  <div class="vs-row"><span class="vs-label vs-this">This app</span><div class="vs-text">Navigation labels (ARS, HQ, QST, DNG) require prior knowledge of the app to parse. No icons. Mid-screen position fights mobile thumb ergonomics.</div></div>
+
+  <h3 style="margin-top:1.5rem">vs. Spotify (visual system discipline)</h3>
+  <div class="vs-row"><span class="vs-label vs-app">Spotify</span><div class="vs-text">Bottom nav: Home · Search · Library. Full words, clear icons, always reachable. Users never wonder where things are. The mental model forms in under 30 seconds.</div></div>
+  <div class="vs-row"><span class="vs-label vs-this">This app</span><div class="vs-text">Mid-screen nav with 3-letter codes. DNG tab is locked without explanation at the nav level. Users have to explore to understand the structure.</div></div>
+
+  <div class="vs-row"><span class="vs-label vs-app">Spotify</span><div class="vs-text">Two typefaces, maximum. The entire design language is built on two font weights and a strict color hierarchy. This is what makes Spotify look expensive.</div></div>
+  <div class="vs-row"><span class="vs-label vs-this">This app</span><div class="vs-text">Four typefaces. Multiple button archetypes. Inline style overrides. The design system is inconsistent, which makes the app feel unpolished even when individual components are good.</div></div>
+</div>
+
+<div id="page-redesign" class="page">
+  <h2>Top 5 critical issues</h2>
+  <div class="ranked-list">
+    <div class="ranked-item"><div class="rank-num">1</div><div class="rank-content"><h4>NEW DAY SIM button visible to users</h4><p>Single biggest trust killer. Makes the app look like a dev build. Fix in 15 minutes.</p></div></div>
+    <div class="ranked-item"><div class="rank-num">2</div><div class="rank-content"><h4>HQ tab information overload</h4><p>10+ sections on one screen. No user can orient themselves. Primary action is buried. Restructuring this tab is the highest-leverage architecture change.</p></div></div>
+    <div class="ranked-item"><div class="rank-num">3</div><div class="rank-content"><h4>"SYSTEM OFFLINE" default state</h4><p>Looks like a broken app. Immediate user abandonment trigger on first open.</p></div></div>
+    <div class="ranked-item"><div class="rank-num">4</div><div class="rank-content"><h4>Streak Shield undermines the retention mechanic</h4><p>The streak is the primary retention driver. Selling an item that neutralizes streak loss at low cost converts urgency into complacency.</p></div></div>
+    <div class="ranked-item"><div class="rank-num">5</div><div class="rank-content"><h4>No visible destination — no journey, only treadmill</h4><p>Users don't know what Level 2 gives them, what rank M means, or why they should care. Motivation requires a visible finish line, not just a progress bar.</p></div></div>
+  </div>
+
+  <div class="divider"></div>
+  <h2>Top 5 highest-ROI improvements</h2>
+  <div class="ranked-list">
+    <div class="ranked-item"><div class="rank-num">1</div><div class="rank-content"><h4>Collapse HQ to 3 sections + bottom nav</h4><p>Highest leverage structural change. Makes the app feel polished, fast, and purposeful. Directly impacts daily activation rate.</p></div></div>
+    <div class="ranked-item"><div class="rank-num">2</div><div class="rank-content"><h4>Add "Next unlock" callout throughout</h4><p>Converts abstract grind into purposeful progression. Shows users exactly what they're working toward. Turns every XP gain into a step toward something meaningful.</p></div></div>
+    <div class="ranked-item"><div class="rank-num">3</div><div class="rank-content"><h4>Add urgency escalation to EOD countdown</h4><p>Converts a passive number into an active retention trigger. Color + language change when time is running out. Directly impacts quest completion rate and daily active usage.</p></div></div>
+    <div class="ranked-item"><div class="rank-num">4</div><div class="rank-content"><h4>Interactive onboarding card flow</h4><p>Replaces text checklist with a game-like intro. Sets the RPG tone immediately. Dramatically improves day-1 retention — the most critical session in any habit app.</p></div></div>
+    <div class="ranked-item"><div class="rank-num">5</div><div class="rank-content"><h4>Nav label + icon fix</h4><p>Smallest effort, immediately makes the app legible to anyone. Reduces new-user navigation confusion and first-session abandonment.</p></div></div>
+  </div>
+
+  <div class="divider"></div>
+  <h2>Ideal screen layout — Home tab</h2>
+  <p style="margin-bottom:1rem">What the redesigned HQ/Home tab should look like:</p>
+
+  <div class="screen-mock">
+    <div class="mock-header">
+      <span class="mock-brand">⬡ NEXUS SYS</span>
+      <div class="mock-hud-pill">
+        <span class="mock-hud-stat">LVL 1</span>
+        <span class="mock-hud-stat" style="background:var(--color-background-warning);color:var(--color-text-warning)">STRK 0</span>
+      </div>
+    </div>
+
+    <div class="mock-card" style="border:2px solid var(--color-border-info)">
+      <div class="mock-card-label">Today's mission</div>
+      <div class="mock-card-title">Awaken your hunter</div>
+      <div class="mock-card-sub">Daily login unlocks quests and protects your streak</div>
+      <div style="margin-top:8px">
+        <div class="mock-cta">⚡ Daily Login</div>
+      </div>
+    </div>
+
+    <div class="mock-stat-row">
+      <div class="mock-stat"><span class="mock-stat-val">12</span><span class="mock-stat-key">XP</span></div>
+      <div class="mock-stat"><span class="mock-stat-val">1</span><span class="mock-stat-key">Level</span></div>
+      <div class="mock-stat"><span class="mock-stat-val">0</span><span class="mock-stat-key">Streak</span></div>
+    </div>
+
+    <div class="mock-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <span style="font-size:12px;font-weight:500;color:var(--color-text-primary)">XP Progress</span>
+        <span style="font-size:11px;color:var(--color-text-secondary)">12 / 100</span>
+      </div>
+      <div class="mock-xp-bar"><div class="mock-xp-fill"></div></div>
+      <div style="font-size:11px;color:var(--color-text-info);margin-top:4px">Strike ability unlocks at Level 2 — 88 XP away</div>
+    </div>
+
+    <div class="mock-card" style="font-size:12px;color:var(--color-text-secondary)">
+      <div style="margin-bottom:4px;font-weight:500;color:var(--color-text-primary);font-size:13px">Recent activity</div>
+      [ No records yet — complete a quest to start your log ]
+    </div>
+
+    <div class="mock-bottom-nav">
+      <div class="mock-nav-item"><span class="mock-nav-icon">⚔</span>Shop</div>
+      <div class="mock-nav-item active"><span class="mock-nav-icon">🏠</span>Home</div>
+      <div class="mock-nav-item"><span class="mock-nav-icon">📜</span>Quests</div>
+      <div class="mock-nav-item"><span class="mock-nav-icon">🌀</span>Dungeon</div>
+    </div>
+  </div>
+
+  <p class="section-note" style="margin-top:12px;text-align:center">Mockup illustrates structure, not final visual style. Full-bleed dark theme + purple neon aesthetic still applies.</p>
+</div>
+
+<script>
+function show(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  event.target.classList.add('active');
+}
+</script>

@@ -1,0 +1,639 @@
+/* ═══════════════════════════════════════════════════════════════════════════════
+   VISUAL ENGINE v6.0 — Animation & Effects Stylesheet
+   
+   Systems:
+   - Particle effects (.ve-particle)
+   - Anticipation animations (.anticipate-*)
+   - Combo display (.combo-*)
+   - Living ambient effects (.energy-flow, .living-*)
+   - Micro-interactions (.micro-*)
+   - Reward bursts (.burst-*)
+═══════════════════════════════════════════════════════════════════════════════ */
+
+/* ────────────────────────────────────────────────────────────────────────────
+   ACCESSIBILITY: Reduced Motion Support
+──────────────────────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .ve-particle,
+  .anticipate-charge,
+  .anticipate-release,
+  .combo-active,
+  .combo-break,
+  .momentum-fill,
+  .energy-flow,
+  .micro-press,
+  .micro-release,
+  .reward-announcement,
+  .variable-reward::before,
+  .urgency-low,
+  .urgency-medium,
+  .urgency-high,
+  .satisfaction-pulse {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
+  
+  .ve-particle {
+    display: none !important;
+  }
+  
+  #combo-display,
+  #momentum-bar {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   PARTICLE SYSTEM
+──────────────────────────────────────────────────────────────────────────── */
+.ve-particle {
+  position: fixed;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9999;
+  mix-blend-mode: screen;
+  box-shadow: 0 0 6px currentColor;
+  will-change: transform, opacity;
+  display: none;
+}
+
+.ve-particle.gold {
+  background: linear-gradient(135deg, #ffd700, #ffaa00);
+  box-shadow: 0 0 8px #ffd700, 0 0 16px rgba(255, 215, 0, 0.5);
+}
+
+.ve-particle.xp {
+  background: linear-gradient(135deg, #66ff00, #00ff88);
+  box-shadow: 0 0 8px #66ff00, 0 0 16px rgba(102, 255, 0, 0.5);
+}
+
+.ve-particle.mana {
+  background: linear-gradient(135deg, #9900ff, #ff00cc);
+  box-shadow: 0 0 8px #9900ff, 0 0 16px rgba(153, 0, 255, 0.5);
+}
+
+.ve-particle.crit {
+  background: radial-gradient(circle, #ffffff 0%, #ff0040 50%, transparent 70%);
+  box-shadow: 0 0 12px #ff0040, 0 0 24px rgba(255, 0, 64, 0.8);
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   COMBO DISPLAY
+──────────────────────────────────────────────────────────────────────────── */
+#combo-display {
+  position: fixed;
+  top: 80px;
+  right: 20px;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  z-index: 1000;
+  pointer-events: none;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+#combo-display.pulse {
+  animation: comboPulse 0.4s ease-out;
+}
+
+#combo-display.combo-break {
+  animation: comboBreak 0.6s ease-out;
+}
+
+#combo-display.burn-fx {
+  display: flex !important;
+  animation: burnPulse 1s infinite alternate;
+  filter: drop-shadow(0 0 15px rgba(255, 51, 102, 0.8));
+}
+
+#combo-display.burn-fx .combo-badge {
+  background: linear-gradient(135deg, #ff0040, #ff3366);
+  content: "BURN";
+}
+
+#combo-display.burn-fx .combo-count {
+  display: none;
+}
+
+#combo-display.burn-fx .combo-multiplier {
+  font-size: 16px;
+  color: #ff3366;
+  text-shadow: 0 0 10px rgba(255, 51, 102, 0.8);
+}
+
+@keyframes burnPulse {
+  0% { transform: scale(1.1); }
+  100% { transform: scale(1.25); filter: drop-shadow(0 0 25px rgba(255, 51, 102, 1)); }
+}
+
+body.momentum-burn-active::after {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;
+  box-shadow: inset 0 0 80px rgba(255, 51, 102, 0.15);
+  z-index: 999;
+  animation: vignettePulse 2s infinite alternate;
+}
+
+@keyframes vignettePulse {
+  0% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
+.combo-badge {
+  background: linear-gradient(135deg, #ff0040, #ff6600);
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 20px;
+  box-shadow: 
+    0 0 20px rgba(255, 0, 64, 0.5),
+    0 4px 12px rgba(0,0,0,0.3),
+    inset 0 1px 0 rgba(255,255,255,0.3);
+  text-shadow: 0 0 8px rgba(255,255,255,0.5);
+  letter-spacing: 0.1em;
+}
+
+.combo-count {
+  font-size: 18px;
+  font-family: var(--font-display);
+  background: linear-gradient(180deg, #fff 0%, #ffcc00 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 8px rgba(255,204,0,0.8));
+}
+
+.combo-multiplier {
+  font-size: 10px;
+  color: #66ff00;
+  font-family: var(--font-mono);
+  text-shadow: 0 0 8px rgba(102,255,0,0.6);
+}
+
+@keyframes comboPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.3); }
+  100% { transform: scale(1); }
+}
+
+@keyframes comboBreak {
+  0% { transform: scale(1) rotate(0deg); filter: brightness(1); }
+  25% { transform: scale(1.1) rotate(-5deg); filter: brightness(1.5); }
+  50% { transform: scale(0.9) rotate(5deg); filter: brightness(0.5); }
+  75% { transform: scale(1.05) rotate(-2deg); filter: brightness(1.2); }
+  100% { transform: scale(1) rotate(0deg); filter: brightness(1); }
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   ANTICIPATION EFFECTS
+──────────────────────────────────────────────────────────────────────────── */
+.anticipate-charge {
+  position: relative;
+}
+
+.anticipate-charge::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0%,
+    rgba(102, 255, 0, 0.8) 25%,
+    rgba(153, 0, 255, 0.8) 50%,
+    rgba(255, 0, 204, 0.8) 75%,
+    transparent 100%
+  );
+  opacity: 0;
+  z-index: -1;
+  animation: chargeRotate 0.8s linear;
+}
+
+.anticipate-charge.active::before {
+  opacity: 1;
+}
+
+@keyframes chargeRotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.anticipate-shake {
+  animation: anticipateShake 0.15s ease-in-out 3;
+}
+
+@keyframes anticipateShake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-2px); }
+  75% { transform: translateX(2px); }
+}
+
+.anticipate-pulse {
+  animation: anticipatePulse 0.2s ease-in-out 4;
+}
+
+@keyframes anticipatePulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   SHIMMER EFFECT
+──────────────────────────────────────────────────────────────────────────── */
+.shimmer-active {
+  position: relative;
+  overflow: hidden;
+}
+
+.shimmer-active::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255,255,255,0.4),
+    transparent
+  );
+  animation: shimmer 0.8s ease-in-out;
+}
+
+@keyframes shimmer {
+  to { left: 150%; }
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   LIVING ENERGY FLOWS
+──────────────────────────────────────────────────────────────────────────── */
+.energy-flow {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(
+    90deg,
+    var(--c-glow) 0%,
+    rgba(102, 255, 0, 0.8) 25%,
+    rgba(153, 0, 255, 0.8) 50%,
+    rgba(255, 0, 204, 0.8) 75%,
+    var(--c-glow) 100%
+  );
+  background-size: 200% 100%;
+  transition: opacity 0.3s ease;
+}
+
+.xp-bar-fill.energy-flow {
+  animation: energyFlow 2s linear infinite;
+}
+
+@keyframes energyFlow {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   LIVING PULSE (Ambient)
+──────────────────────────────────────────────────────────────────────────── */
+.living-pulse {
+  animation: livingPulse calc(2s - (var(--living-pulse, 0.5) * 1.5s)) ease-in-out infinite;
+}
+
+@keyframes livingPulse {
+  0%, 100% { 
+    box-shadow: 0 0 0 0 rgba(153, 0, 255, 0.4),
+                inset 0 0 20px rgba(102, 0, 204, 0.1);
+  }
+  50% { 
+    box-shadow: 0 0 20px 5px rgba(153, 0, 255, 0.2),
+                inset 0 0 30px rgba(102, 0, 204, 0.2);
+  }
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   REWARD BURST EFFECTS
+──────────────────────────────────────────────────────────────────────────── */
+.burst-container {
+  position: fixed;
+  pointer-events: none;
+  z-index: 9998;
+}
+
+.burst-ring {
+  position: absolute;
+  border: 2px solid;
+  border-radius: 50%;
+  animation: burstExpand 0.6s ease-out forwards;
+}
+
+.burst-ring.xp {
+  border-color: #66ff00;
+  box-shadow: 0 0 20px #66ff00;
+}
+
+.burst-ring.gold {
+  border-color: #ffd700;
+  box-shadow: 0 0 20px #ffd700;
+}
+
+@keyframes burstExpand {
+  0% {
+    width: 20px;
+    height: 20px;
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+  100% {
+    width: 150px;
+    height: 150px;
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.5);
+  }
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   MOMENTUM VISUALIZER
+──────────────────────────────────────────────────────────────────────────── */
+#momentum-bar {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 200px;
+  height: 4px;
+  background: rgba(0,0,0,0.5);
+  border-radius: 2px;
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 1000;
+}
+
+#momentum-bar.visible {
+  opacity: 1;
+}
+
+.momentum-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ff0040, #ff6600, #ffcc00);
+  border-radius: 2px;
+  transition: width 0.1s linear;
+  box-shadow: 0 0 10px currentColor;
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   MICRO-INTERACTION ENHANCEMENTS
+──────────────────────────────────────────────────────────────────────────── */
+.micro-click {
+  position: relative;
+}
+
+.micro-click::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(circle at center, rgba(255,255,255,0.3) 0%, transparent 70%);
+  opacity: 0;
+  animation: microRipple 0.4s ease-out;
+  pointer-events: none;
+}
+
+@keyframes microRipple {
+  0% { opacity: 1; transform: scale(0); }
+  100% { opacity: 0; transform: scale(2); }
+}
+
+/* Enhanced ripple for tap */
+.tap-ripple-enhanced {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,0.5) 0%, transparent 60%);
+  transform: scale(0);
+  animation: tapRippleEnhanced 0.5s ease-out forwards;
+  pointer-events: none;
+}
+
+@keyframes tapRippleEnhanced {
+  to {
+    transform: scale(3);
+    opacity: 0;
+  }
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   URGENCY ESCALATION
+──────────────────────────────────────────────────────────────────────────── */
+.urgency-low {
+  --urgency-glow: 0 0 10px rgba(102, 255, 0, 0.3);
+  animation: urgencyBreath 3s ease-in-out infinite;
+}
+
+.urgency-medium {
+  --urgency-glow: 0 0 15px rgba(255, 204, 0, 0.5);
+  animation: urgencyPulse 1.5s ease-in-out infinite;
+}
+
+.urgency-high {
+  --urgency-glow: 0 0 20px rgba(255, 0, 64, 0.7);
+  animation: urgencyRapid 0.8s ease-in-out infinite;
+}
+
+/* System-wide urgent state */
+body.system-urgent {
+  --c-glow: #ff0040;
+  --mana: #ff3366;
+}
+
+body.system-urgent #monarch-hud {
+  border-color: rgba(255, 0, 64, 0.5);
+  box-shadow: 
+    0 0 30px rgba(255, 0, 64, 0.3),
+    inset 0 0 60px rgba(255, 0, 64, 0.1);
+}
+
+body.system-urgent .xp-bar-fill {
+  background: linear-gradient(90deg, #ff0040, #ff6600, #ffcc00);
+  box-shadow: 0 0 15px rgba(255, 0, 64, 0.6);
+}
+
+body.system-urgent #eod-countdown {
+  color: #ff0040;
+  text-shadow: 0 0 10px rgba(255, 0, 64, 0.8);
+  animation: urgentPulse 0.5s ease-in-out infinite;
+}
+
+@keyframes urgentPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes urgencyBreath {
+  0%, 100% { box-shadow: var(--urgency-glow); }
+  50% { box-shadow: 0 0 20px rgba(102, 255, 0, 0.5); }
+}
+
+@keyframes urgencyPulse {
+  0%, 100% { box-shadow: var(--urgency-glow); transform: scale(1); }
+  50% { box-shadow: 0 0 25px rgba(255, 204, 0, 0.8); transform: scale(1.02); }
+}
+
+@keyframes urgencyRapid {
+  0%, 100% { box-shadow: var(--urgency-glow); }
+  50% { box-shadow: 0 0 30px rgba(255, 0, 64, 1); }
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   REWARD ANNOUNCEMENT (Random Events)
+──────────────────────────────────────────────────────────────────────────── */
+.reward-announcement {
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.5);
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.reward-announcement.show {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.reward-announcement.fade-out {
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(1.1);
+  transition: all 0.3s ease-out;
+}
+
+.ra-icon {
+  font-size: 48px;
+  text-shadow: 0 0 30px currentColor;
+  animation: raPulse 0.6s ease-in-out infinite;
+  margin-bottom: 8px;
+}
+
+.ra-name {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 700;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  text-shadow: 0 0 20px rgba(255,255,255,0.5);
+  margin-bottom: 4px;
+}
+
+.ra-bonus {
+  font-family: var(--font-mono);
+  font-size: 16px;
+  color: #66ff00;
+  text-shadow: 0 0 10px rgba(102,255,0,0.6);
+}
+
+@keyframes raPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   VARIABLE REWARD SPARKLE
+──────────────────────────────────────────────────────────────────────────── */
+.variable-reward {
+  position: relative;
+}
+
+.variable-reward::before {
+  content: '✦';
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  font-size: 20px;
+  color: #ffd700;
+  text-shadow: 0 0 10px #ffd700;
+  animation: sparkle 1s ease-in-out infinite;
+  opacity: 0;
+}
+
+.variable-reward.active::before {
+  opacity: 1;
+}
+
+@keyframes sparkle {
+  0%, 100% { transform: scale(0) rotate(0deg); opacity: 0; }
+  50% { transform: scale(1.2) rotate(180deg); opacity: 1; }
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   CHAIN/COMBO INDICATORS
+──────────────────────────────────────────────────────────────────────────── */
+.chain-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.chain-link::after {
+  content: '→';
+  color: var(--mana);
+  opacity: 0.5;
+  animation: chainFlow 0.8s ease-in-out infinite;
+}
+
+@keyframes chainFlow {
+  0%, 100% { opacity: 0.3; transform: translateX(-2px); }
+  50% { opacity: 1; transform: translateX(2px); }
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   TENSION BUILDER
+──────────────────────────────────────────────────────────────────────────── */
+.tension-builder {
+  position: relative;
+  overflow: hidden;
+}
+
+.tension-builder::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #ff0040, transparent);
+  transform: translateX(-100%);
+  animation: tensionBuild 0.5s ease-out forwards;
+}
+
+@keyframes tensionBuild {
+  to { transform: translateX(100%); }
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   SATISFACTION COMPLETE
+──────────────────────────────────────────────────────────────────────────── */
+.satisfaction-complete {
+  animation: satisfactionPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes satisfactionPop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.1); }
+  80% { transform: scale(0.98); }
+  100% { transform: scale(1); }
+}
+
+/* Checkmark draw animation */
+.check-draw {
+  stroke-dasharray: 20;
+  stroke-dashoffset: 20;
+  animation: drawCheck 0.3s ease-out forwards;
+}
+
+@keyframes drawCheck {
+  to { stroke-dashoffset: 0; }
+}

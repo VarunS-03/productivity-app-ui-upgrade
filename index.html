@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no"/>
+<meta name="description" content="HUNTER SYSTEM — Solo Leveling RPG Quest Tracker"/>
+<meta name="theme-color" content="#000000"/>
+<title>SYSTEM — Hunter Quest Log</title>
+
+<!-- Favicon -->
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23000000'/><text x='50%25' y='54%25' font-size='20' text-anchor='middle' dominant-baseline='middle' fill='%239900ff'>⬡</text></svg>"/>
+
+<!--
+  FONTS: Currently loading from Google CDN for convenience.
+  For APK / offline use:
+  1. Go to https://gwfh.mranftl.com/fonts
+  2. Download: Black Ops One, Rajdhani (400/600/700), Bebas Neue, Share Tech Mono
+  3. Place .woff2 files in /fonts/ directory
+  4. Uncomment @font-face blocks in base.css and remove the line below
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Rajdhani:wght@400;600;700&family=Bebas+Neue&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
+
+<!-- Stylesheets — order matters -->
+<link rel="stylesheet" href="css/base.css"/>
+<link rel="stylesheet" href="css/layout.css"/>
+<link rel="stylesheet" href="css/components.css"/>
+<link rel="stylesheet" href="css/visual-engine.css"/>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════
+     BACKGROUND LAYERS
+═══════════════════════════════════════════════════════════ -->
+<canvas id="bg-canvas" aria-hidden="true"></canvas>
+<div class="shadow-mist"   aria-hidden="true"></div>
+<div class="shadow-aura"   aria-hidden="true"></div>
+<div class="system-fragments" aria-hidden="true">
+  <div class="system-fragment fragment-1"></div>
+  <div class="system-fragment fragment-2"></div>
+  <div class="system-fragment fragment-3"></div>
+</div>
+<div id="streaks-layer" aria-hidden="true"></div>
+<div id="vignette"      aria-hidden="true"></div>
+
+<!-- Hunter silhouette — place your image in images/silhouette.png -->
+<div class="hunter-silhouette" aria-hidden="true"
+     style="background:url('images/silhouette.png') no-repeat center bottom/contain;"></div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     AWAKENING INTRO OVERLAY
+═══════════════════════════════════════════════════════════ -->
+<div id="awakening-overlay" role="dialog" aria-label="System awakening">
+  <div class="aw-rune" aria-hidden="true">⬡</div>
+  <div class="aw-title">HUNTER SYSTEM</div>
+  <div class="aw-sub">INITIALISING PROTOCOLS...</div>
+  <div class="aw-bar-wrap"><div class="aw-bar-fill"></div></div>
+  <div class="aw-skip" data-action="skipAwakening" role="button" tabindex="0">[ TAP TO SKIP ]</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     FIRST CONTACT MODAL — one-time hunter setup
+═══════════════════════════════════════════════════════════ -->
+<div id="first-contact-backdrop" role="dialog" aria-label="Create your hunter">
+  <div class="first-contact-box">
+    <div class="fc-header">
+      <span class="fc-rune" aria-hidden="true">⬡</span>
+      <div class="fc-title">FIRST CONTACT</div>
+      <div class="fc-sub">HUNTER DESIGNATION REQUIRED</div>
+    </div>
+    <div class="fc-body">
+      <label class="fc-label" for="first-contact-input">HUNTER NAME</label>
+      <input class="sys-input" id="first-contact-input" type="text"
+             placeholder="[ ENTER DESIGNATION... ]"
+             maxlength="32" autocomplete="off" spellcheck="false"/>
+      <div id="first-contact-error" role="alert" aria-live="polite"></div>
+      <div style="margin-top:16px;">
+        <button class="sys-btn sys-btn-primary" data-action="submitFirstContact" style="width:100%;">
+          <span>ARISE — BEGIN JOURNEY</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SYSTEM NOTIFICATION MODAL
+═══════════════════════════════════════════════════════════ -->
+<div id="sys-modal-backdrop" role="dialog" aria-modal="true">
+  <div class="sys-modal">
+    <div class="sys-modal-header">
+      <span class="tag" id="sys-modal-tag">SYSTEM</span>
+    </div>
+    <div class="sys-modal-body" id="sys-modal-body"></div>
+    <div class="sys-modal-footer">
+      <button class="sys-btn sys-btn-primary" data-action="closeSysModal">
+        <span>CONFIRM</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     LEVEL UP EVENT
+═══════════════════════════════════════════════════════════ -->
+<div id="levelup-event" aria-live="assertive">
+  <div class="lvl-rune-ring"   aria-hidden="true"></div>
+  <div class="lvl-rune-ring-2" aria-hidden="true"></div>
+  <div class="lvl-pillar pillar-left"  aria-hidden="true"></div>
+  <div class="lvl-pillar pillar-right" aria-hidden="true"></div>
+  <div class="lvl-text-wrap">
+    <div class="lvl-badge">LEVEL UP</div>
+    <div class="lvl-number" id="lvl-number-display">2</div>
+    <div class="lvl-subtitle">POWER INCREASED</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     RANK UP EVENT
+═══════════════════════════════════════════════════════════ -->
+<div id="rankup-event" aria-live="assertive">
+  <div class="rankup-rank-text" id="rankup-rank-display">M</div>
+  <div class="rankup-label">RANK PROMOTION</div>
+  <div class="rankup-prev"  id="rankup-prev-rank"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     VFX OVERLAYS
+═══════════════════════════════════════════════════════════ -->
+<div id="crit-overlay"       aria-hidden="true"></div>
+<div id="quest-clear-flash"  aria-hidden="true"></div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     TOAST CONTAINER
+═══════════════════════════════════════════════════════════ -->
+<div id="toast-container" role="status" aria-live="polite" aria-atomic="false"></div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     CURSOR ELEMENTS
+═══════════════════════════════════════════════════════════ -->
+<div id="cursor-ring"             aria-hidden="true"></div>
+<div id="cursor-dot"              aria-hidden="true"></div>
+<div id="cursor-trail-container"  aria-hidden="true"></div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     MAIN APP
+═══════════════════════════════════════════════════════════ -->
+<!-- Screen flash overlay for AAA visual impact -->
+<div id="screen-flash" class="screen-flash-layer"></div>
+<div id="app">
+
+  <div id="system-viewport">
+    <div id="monarch-hud" aria-hidden="false">
+      <div class="hud-corner top-left"></div>
+      <div class="hud-corner top-right"></div>
+
+      <header class="hud-status-line" role="banner">
+        <div class="hud-brand">SHADOW⬡CORE</div>
+        <div class="hud-stat">LVL <span id="hud-lvl">1</span></div>
+        <div class="hud-stat">STRK <span id="hud-strk">0</span></div>
+        <div class="hud-stat-spacer"></div>
+        <div id="header-hunter-name" aria-label="Hunter name"></div>
+        <div id="header-status" aria-label="System status">AWAKEN TO BEGIN</div>
+        <div id="header-streak" aria-label="Login streak"></div>
+        <div class="hud-clock" id="eod-countdown" aria-label="End of day countdown" aria-live="off"></div>
+        <div id="save-indicator" aria-live="polite">SAVED</div>
+        <div class="bonus-gate-indicator" id="bonus-gate-indicator"
+             data-action="triggerBonusGate" role="button" tabindex="0"
+             aria-label="Bonus gate available">
+          ◆ GATE
+          <span id="bgi-sub-text"></span>
+        </div>
+      </header>
+
+      <!-- NAVIGATION HUD (SLIDE TABS) -->
+      <nav class="hud-nav" aria-label="Main Navigation">
+        <button class="nav-orb active tab-btn" data-tab="hq" title="System Hub">
+          <span class="nav-icon" aria-hidden="true">⬡</span>
+          <span class="nav-label">SYSTEM HUB</span>
+        </button>
+        <button class="nav-orb tab-btn" data-tab="quests" title="Active Quests">
+          <span class="nav-icon" aria-hidden="true">◈</span>
+          <span class="nav-label">QUESTS</span>
+        </button>
+        <button class="nav-orb tab-btn" data-tab="dungeon" id="tab-dungeon" title="Active Raid Zones">
+          <span class="nav-icon" aria-hidden="true">🌀</span>
+          <span class="nav-label">GATES</span>
+        </button>
+        <button class="nav-orb tab-btn" data-tab="arsenal" id="tab-arsenal" title="System Shop & Inventory">
+          <span class="nav-icon" aria-hidden="true">⚔</span>
+          <span class="nav-label">ARSENAL</span>
+        </button>
+        <button class="nav-orb tab-btn" data-tab="profile" title="Hunter Status">
+          <span class="nav-icon" aria-hidden="true">👤</span>
+          <span class="nav-label">STATUS</span>
+        </button>
+      </nav>
+    </div>
+
+    <div id="spatial-canvas">
+
+    <!-- ═══ HQ TAB ═══ -->
+    <main id="page-hq" class="page spatial-node" role="main">
+      <div class="hq-main-column">
+        <!-- Daily Login Gate - appears only when not logged in today -->
+        <section class="awakening-gate" id="awakening-gate" aria-live="polite">
+          <div class="onboarding-head">
+            <div class="onboarding-title">SYSTEM AWAKENING</div>
+          </div>
+          <p class="awakening-copy">Validate today to unlock quest tracking and protect your streak.</p>
+          <button class="sys-btn sys-btn-primary awakening-login-btn" data-action="dailyLogin">
+            <span>⚡ DAILY LOGIN</span>
+          </button>
+        </section>
+
+        <section class="onboarding-panel" id="onboarding-panel" aria-live="polite">
+          <div class="onboarding-head">
+            <div class="onboarding-title">FIRST HUNT CHECKLIST</div>
+            <button class="sys-btn sys-btn-sm" data-action="dismissOnboarding"><span>DISMISS</span></button>
+          </div>
+          <div class="onboarding-items">
+            <div class="onb-item" id="onb-step-login">1. Use <strong>Daily Login</strong> to activate today</div>
+            <div class="onb-item" id="onb-step-add">2. Add at least one quest in HQ Quick Register</div>
+            <div class="onb-item" id="onb-step-complete">3. Complete a quest to gain XP and Gold</div>
+          </div>
+        </section>
+
+        <!-- MISSION CONTROL -->
+        <div class="sys-label">MISSION CONTROL</div>
+        <section class="mission-control-panel">
+          <div class="mcp-topline">YOUR NEXT MOVE</div>
+          <h1 id="next-action-title">Start your day with Daily Login</h1>
+          <p id="next-action-copy">Login to unlock quests, earn XP, and protect your streak.</p>
+          <div class="next-action-meta" id="next-action-meta">+5 to +15 XP available now</div>
+          <div class="next-action-row">
+            <button class="sys-btn sys-btn-primary cta-dominant" data-action="takeNextAction">
+              <span id="next-action-btn-label">⚡ DAILY LOGIN</span>
+            </button>
+            <button class="sys-btn" data-action="switchTab" data-target-tab="quests">
+              <span>OPEN QUESTS</span>
+            </button>
+          </div>
+        </section>
+
+        <section class="quick-register-panel" id="quick-register-panel" aria-label="Quick register quest">
+          <div class="sys-label">QUICK REGISTER</div>
+          <div class="quest-input-wrap quest-input-wrap-hq">
+            <input class="sys-input" type="text" id="quest-name-input-hq"
+                   placeholder="[ REGISTER NEW QUEST... ]"
+                   maxlength="120" autocomplete="off"/>
+            <button class="quest-add-btn" data-action="addQuestHQ" aria-label="Add quest from HQ">+ REGISTER</button>
+          </div>
+        </section>
+      </div>
+
+      <div class="hq-side-column">
+        <!-- COMPACT HUNTER STATUS CARD -->
+        <div class="sys-label">HUNTER STATUS</div>
+        <div class="status-window" id="status-window-main">
+          <div class="sw-header">
+            <div class="sw-title">STATUS WINDOW</div>
+            <div class="rank-hex rank-K" id="rank-hex-badge">K</div>
+          </div>
+          <div class="sw-body">
+            <div class="sw-grid">
+              <div class="sw-cell">
+                <div class="sw-cell-key">EXPERIENCE</div>
+                <div class="sw-cell-val xp-val t-num" id="xp-display">12</div>
+                <div class="sw-cell-sub">TOTAL XP</div>
+              </div>
+              <div class="sw-cell">
+                <div class="sw-cell-key">GOLD</div>
+                <div class="sw-cell-val gold-val t-num" id="gold-display">5</div>
+                <div class="sw-cell-sub">TOTAL GOLD</div>
+              </div>
+              <div class="sw-cell">
+                <div class="sw-cell-key">LEVEL</div>
+                <div class="sw-cell-val level-val t-num" id="level-display">1</div>
+                <div class="sw-cell-sub">HUNTER LVL</div>
+              </div>
+              <div class="sw-cell">
+                <div class="sw-cell-key">LOGIN STREAK</div>
+                <div class="sw-cell-val streak-val t-num" id="streak-display">0</div>
+                <div class="sw-cell-sub">DAYS</div>
+              </div>
+            </div>
+
+            <!-- XP Bar -->
+            <div class="xp-bar-wrap">
+              <div class="xp-bar-label">
+                <span>EXPERIENCE</span>
+                <span id="xp-progress-text">12 / 100</span>
+              </div>
+              <div class="xp-to-next" id="xp-to-next"><span>88</span> XP to Level 2</div>
+              <div class="xp-bar-track">
+                <div class="xp-bar-fill energy-flow" id="xp-bar-fill" style="width:12%;"></div>
+              </div>
+            </div>
+
+            <!-- Gold Bar -->
+            <div class="gold-bar-wrap">
+              <div class="gold-bar-label">
+                <span>GOLD TOWARD RANK</span>
+                <span id="gold-progress-text">5 / 50</span>
+              </div>
+              <div class="gold-track">
+                <div class="gold-fill" id="gold-bar-fill" style="width:10%;"></div>
+              </div>
+            </div>
+
+            <!-- Streak Bar -->
+            <div class="streak-bar-wrap streak-bar-row">
+              <div class="streak-bar-label">
+                <span>WEEKLY STREAK</span>
+                <span id="streak-progress-text">0 / 7 days</span>
+              </div>
+              <div class="streak-segments" id="streak-segments">
+                <div class="streak-seg" data-day="1"></div>
+                <div class="streak-seg" data-day="2"></div>
+                <div class="streak-seg" data-day="3"></div>
+                <div class="streak-seg" data-day="4"></div>
+                <div class="streak-seg" data-day="5"></div>
+                <div class="streak-seg" data-day="6"></div>
+                <div class="streak-seg" data-day="7"></div>
+              </div>
+            </div>
+
+            <!-- Power Level Bar -->
+            <div class="power-bar-wrap">
+              <div class="power-bar-label">
+                <span>HUNTER POWER</span>
+                <span id="power-level-text" style="color:var(--mana);font-family:var(--font-mono);">0</span>
+              </div>
+              <div class="power-bar-track">
+                <div class="power-level-fill" id="power-level-fill" style="width:0%;"></div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- COMMANDS -->
+        <div class="sys-label">COMMANDS</div>
+        <div class="cmd-row">
+          <button class="cmd-btn cmd-login" id="login-btn" data-action="dailyLogin">⚡ DAILY LOGIN</button>
+          <button class="cmd-btn cmd-eod"   id="end-day-btn"    data-action="endOfDay">☽ END OF DAY</button>
+          <button class="cmd-btn cmd-sim"   id="end-day-sim-btn" data-action="endDaySimulation" style="display:none;">↺ NEW DAY SIM</button>
+        </div>
+
+        <!-- ACTIVITY LOG -->
+        <div class="hq-collapsible expanded" id="sec-activity">
+          <button class="hq-collapse-toggle" data-action="toggleSection" data-section="activity" aria-expanded="true">
+            <span class="sys-label">ACTIVITY LOG</span>
+            <span class="collapse-right">
+              <span class="collapse-meta" id="meta-activity"></span>
+              <span class="collapse-icon">−</span>
+            </span>
+          </button>
+          <div class="hq-collapse-body">
+            <div class="xp-hist-panel">
+              <div class="xp-hist-title">RECENT XP CHANGES — LAST 5</div>
+              <div class="xp-hist-list" id="xp-history-list" role="list">
+                <span class="xp-hist-empty">[ NO RECORDS ]</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- EOD SUMMARY -->
+        <div id="end-of-day-summary" class="eod-panel" role="status" style="display:none;">
+          <h4>◈ END OF DAY REPORT</h4>
+          <div class="eod-line">Original XP:    <strong><span id="summary-original-xp">0</span></strong></div>
+          <div class="eod-line">Original Gold:  <strong><span id="summary-original-gold">0</span></strong></div>
+          <div class="eod-line">Failed Quests:  <strong><span id="summary-failed-count">0</span></strong></div>
+          <div class="eod-line">Penalty:        <strong><span id="summary-penalty">0</span>%</strong></div>
+          <div class="eod-line">Final XP:       <strong><span id="summary-final-xp">0</span></strong></div>
+          <div class="eod-line">Final Gold:     <strong><span id="summary-final-gold">0</span></strong></div>
+        </div>
+      </div>
+    </main><!-- /page-hq -->
+
+    <!-- ═══ QUESTS TAB ═══ -->
+    <section id="page-quests" class="page spatial-node" aria-label="Daily quests">
+
+      <!-- DYNAMIC THEMED BACKGROUND -->
+      <div class="dynamic-bg-layer" style="background-image: url('https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=1920&auto=format&fit=crop');"></div>
+
+      <div class="quest-controls-sidebar">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--gap);flex-wrap:wrap;gap:10px; position:relative; z-index:2;">
+          <div class="sys-label" style="margin-bottom:0;border:none;padding:0;">DAILY QUEST BOARD</div>
+          <div class="shadow-counter" aria-label="Shadow army count">
+            <span>SHADOW ARMY</span>
+            <span class="shadow-counter-num t-num" id="shadow-army-count">0</span>
+          </div>
+        </div>
+
+        <!-- Tier selector -->
+        <div class="tier-selector" role="group" aria-label="Quest tier">
+          <span class="tier-label">TIER:</span>
+          <button class="tier-btn active-tier" data-tier="E" data-action="selectTier">E</button>
+          <button class="tier-btn"             data-tier="N" data-action="selectTier">N</button>
+          <button class="tier-btn"             data-tier="H" data-action="selectTier">H</button>
+          <button class="tier-btn"             data-tier="S" data-action="selectTier">S</button>
+        </div>
+
+        <!-- Quick templates -->
+        <div class="quest-templates-row" role="list" aria-label="Quick add templates">
+          <button class="template-btn" data-action="useTemplate" data-template="📚 Study for 2 hours">📚 Study 2h</button>
+          <button class="template-btn" data-action="useTemplate" data-template="🏃 Exercise 30 minutes">🏃 Exercise 30m</button>
+          <button class="template-btn" data-action="useTemplate" data-template="💻 Code for 1 hour">💻 Code 1h</button>
+          <button class="template-btn" data-action="useTemplate" data-template="📖 Read 50 pages">📖 Read 50p</button>
+          <button class="template-btn" data-action="useTemplate" data-template="🧘 Meditate 15 minutes">🧘 Meditate 15m</button>
+          <button class="template-btn" data-action="useTemplate" data-template="💧 Drink 8 glasses of water">💧 Hydrate</button>
+        </div>
+
+        <!-- Add quest input -->
+        <div class="quest-input-wrap">
+          <input class="sys-input" type="text" id="quest-name-input"
+                 placeholder="[ ENTER MISSION OBJECTIVE... ]"
+                 maxlength="120" autocomplete="off"/>
+          <button class="quest-add-btn" data-action="addQuest" aria-label="Add quest">+ REGISTER</button>
+        </div>
+      </div>
+
+      <div class="quest-list-column">
+        <!-- Quest list -->
+        <div id="quest-list" role="list" aria-label="Active quests"></div>
+
+        <!-- Bonus gate panel -->
+        <div class="bonus-gate-panel" id="bonus-gate-panel" role="dialog" aria-label="Bonus gate reward">
+          <div class="sys-label">◆ BONUS GATE</div>
+          <div id="gate-reward-box">[ REWARD PENDING — ENTER GATE ]</div>
+          <button class="gate-open-btn sys-btn" id="gate-open-btn" data-action="openGate">
+            <span>OPEN GATE</span>
+          </button>
+        </div>
+      </div>
+
+    </section><!-- /page-quests -->
+
+    <!-- ═══ DUNGEON TAB ═══ -->
+    <section id="page-dungeon" class="page spatial-node" aria-label="Dungeon">
+
+      <!-- DYNAMIC THEMED BACKGROUND -->
+      <div class="dynamic-bg-layer" style="background-image: url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1920&auto=format&fit=crop');"></div>
+
+      <div class="sys-label" style="position:relative; z-index:2;">ACTIVE RAID ZONES</div>
+
+      <div id="forest-dungeon" class="dungeon-card locked-d" style="position:relative; z-index:2;">
+        <div class="dungeon-banner">
+          <!-- DYNAMIC THEMED BACKGROUND INNER -->
+          <div class="dynamic-bg-layer-inner" style="background-image: url('https://images.unsplash.com/photo-1542382156909-9ae37b3f56fd?q=80&w=800&auto=format&fit=crop');"></div>
+          <div class="gate-portal locked" id="gate-portal" aria-hidden="true">
+            <div class="gate-ring"></div>
+            <div class="gate-ring"></div>
+            <div class="gate-ring"></div>
+            <div class="gate-core"></div>
+          </div>
+          <div class="dungeon-banner-title">🌲 FOREST DUNGEON</div>
+          <div id="forest-status" class="dungeon-status-badge dsb-locked" aria-live="polite">⬡ LOCKED</div>
+        </div>
+        <div class="dungeon-body">
+          <div class="dungeon-progress-wrap" id="dungeon-progress-wrap" style="display:none;">
+            <div class="dungeon-progress-label">
+              DUNGEON PROGRESS <span id="dungeon-prog-text">0 / 3 DAYS</span>
+            </div>
+            <div class="dungeon-prog-track">
+              <div class="dungeon-prog-fill" id="dungeon-prog-fill"></div>
+            </div>
+          </div>
+          <div id="forest-requirements" class="dungeon-req">◈ Unlock: Level 5 · Rank M or above</div>
+          <button id="start-forest-btn" class="enter-btn" data-action="startForestDungeon" style="display:none;">▶ ENTER DUNGEON</button>
+
+          <div id="forest-quest-list" class="dungeon-quest-list">
+            <div class="dday"><h4>⬡ DAY 1</h4>
+              <div class="dquest">◈ Clear the forest path</div>
+              <div class="dquest">◈ Gather herbs for potions</div>
+            </div>
+            <div class="dday"><h4>⬡ DAY 2</h4>
+              <div class="dquest">◈ Find the ancient shrine</div>
+              <div class="dquest">◈ Defeat forest guardians</div>
+            </div>
+            <div class="dday"><h4>⬡ DAY 3</h4>
+              <div class="dquest">◈ Navigate the dark grove</div>
+              <div class="dquest">◈ Prepare for battle</div>
+              <div class="dquest boss-quest">⚔ BOSS: Defeat the Forest Guardian</div>
+            </div>
+          </div>
+
+          <!-- Boss section -->
+          <div class="boss-silhouette-wrap" id="boss-silhouette" aria-label="Dungeon boss">
+            <div style="width:160px;height:160px;margin:0 auto 12px;border:var(--b-danger);overflow:hidden;position:relative;">
+              <div class="dynamic-bg-layer-inner" style="background-image: url('https://images.unsplash.com/photo-1542451313056-b7c8e626645f?q=80&w=400&auto=format&fit=crop');"></div>
+              <!-- Fallback SVG boss -->
+              <svg class="boss-svg" viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg" style="position:relative;z-index:1;opacity:0.7;">
+                <polygon points="50,0 44,18 38,6 42,22 30,14 40,26 22,22 36,32 16,34 34,40 10,48 32,48 8,62 34,56 16,72 38,62 28,80 46,66 44,86 52,68 56,86 54,66 72,80 62,62 84,72 74,56 92,62 74,48 90,48 66,40 84,34 68,32 78,26 60,22 70,14 58,22 62,6 56,18" fill="rgba(204,0,0,0.6)"/>
+                <ellipse cx="50" cy="55" rx="18" ry="22" fill="rgba(102,0,204,0.5)"/>
+                <circle cx="44" cy="50" r="3" fill="var(--gate-bright)"/>
+                <circle cx="56" cy="50" r="3" fill="var(--gate-bright)"/>
+              </svg>
+            </div>
+            <div class="boss-name" style="position:relative; z-index:2;">🌲 FOREST GUARDIAN</div>
+            <div class="boss-subtitle">S-RANK BOSS · DUNGEON DEPTH 3</div>
+            <div style="margin-top:12px;padding:0 16px;">
+              <div class="boss-hp-label">BOSS HP</div>
+              <div class="boss-hp-track">
+                <div class="boss-hp-fill" id="boss-hp-fill" style="width:100%;"></div>
+              </div>
+            </div>
+            <p style="font-family:var(--font-mono);font-size:8px;color:rgba(255,255,255,0.18);text-align:center;margin-top:8px;">
+              © Solo Leveling — Chugong / DUBU · Ize Press · Fan display only
+            </p>
+          </div>
+
+        </div>
+      </div>
+
+    </section><!-- /page-dungeon -->
+
+    <!-- ═══ ARSENAL TAB ═══ -->
+    <section id="page-arsenal" class="page spatial-node" aria-label="Arsenal and shop">
+
+      <!-- DYNAMIC THEMED BACKGROUND -->
+      <div class="dynamic-bg-layer" style="background-image: url('https://images.unsplash.com/photo-1552820728-8b83bb6b773f?q=80&w=1920&auto=format&fit=crop');"></div>
+
+      <div class="sys-label" style="position:relative; z-index:2;">SYSTEM SHOP</div>
+      <div class="shop-gold-row" style="position:relative; z-index:2;">
+        <span class="shop-gold-icon" aria-hidden="true">◇</span>
+        <span>AVAILABLE GOLD:</span>
+        <span id="shop-gold-display" class="t-num" style="font-size:22px;">0</span>
+      </div>
+
+      <div class="equip-grid" style="position:relative; z-index:2;">
+
+        <!-- Sword -->
+        <div class="equip-card" id="sword-item">
+          <div class="card-shine" aria-hidden="true"></div>
+          <!-- DYNAMIC THEMED BACKGROUND INNER -->
+          <div class="equip-img-wrap" aria-label="Sword image">
+            <div class="dynamic-bg-layer-inner" style="background-image: url('https://images.unsplash.com/photo-1598463283281-a602c38865e9?q=80&w=400&auto=format&fit=crop');"></div>
+            <div class="equip-placeholder" aria-hidden="true" style="position:relative; z-index:2;">⚔</div>
+          </div>
+          <div class="equip-name">SHADOW BLADE +1</div>
+          <div class="equip-desc">Forged in the abyss. Increases quest XP by 10% when equipped. Binds to Shadow Monarch lineage.</div>
+          <div class="equip-cost t-num">50 <span style="font-size:12px;font-family:var(--font-mono);">GOLD</span></div>
+          <button class="buy-btn" id="buy-sword-btn" data-action="buyItem" data-item="sword">ACQUIRE</button>
+        </div>
+
+        <!-- Armor -->
+        <div class="equip-card" id="armor-item">
+          <div class="card-shine" aria-hidden="true"></div>
+          <div class="equip-img-wrap" aria-label="Armor image">
+            <div class="dynamic-bg-layer-inner" style="background-image: url('https://images.unsplash.com/photo-1595133644053-90ce51ce6026?q=80&w=400&auto=format&fit=crop');"></div>
+            <div class="equip-placeholder" aria-hidden="true" style="position:relative; z-index:2;">◆</div>
+          </div>
+          <div class="equip-name">MONARCH ARMOR +1</div>
+          <div class="equip-desc">Woven from shadow essence. Reduces end-of-day XP penalty by 20%. Rank K and above.</div>
+          <div class="equip-cost t-num">75 <span style="font-size:12px;font-family:var(--font-mono);">GOLD</span></div>
+          <button class="buy-btn" id="buy-armor-btn" data-action="buyItem" data-item="armor">ACQUIRE</button>
+        </div>
+
+        <!-- Streak Shield -->
+        <div class="equip-card" id="streak-shield-item">
+          <div class="card-shine" aria-hidden="true"></div>
+          <div class="equip-img-wrap" aria-label="Shield image">
+            <div class="dynamic-bg-layer-inner" style="background-image: url('https://images.unsplash.com/photo-1614729939124-032f0b56c9ce?q=80&w=400&auto=format&fit=crop');"></div>
+            <div class="equip-placeholder" aria-hidden="true" style="position:relative; z-index:2;">◇</div>
+          </div>
+          <div class="equip-name">STREAK SHIELD</div>
+          <div class="equip-desc">Ancient barrier. Auto-activates on a missed login day — preserves streak once. Single use.</div>
+          <div class="equip-cost t-num">30 <span style="font-size:12px;font-family:var(--font-mono);">GOLD</span></div>
+          <button class="buy-btn" id="buy-shield-btn" data-action="buyItem" data-item="shield">ACQUIRE</button>
+        </div>
+
+        <!-- Shadow Infusion (Infinite Sink) -->
+        <div class="equip-card" id="shadow-infusion-item">
+          <div class="card-shine" aria-hidden="true"></div>
+          <div class="equip-img-wrap" aria-label="Infusion image">
+            <div class="dynamic-bg-layer-inner" style="background-image: url('https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=400&auto=format&fit=crop');"></div>
+            <div class="equip-placeholder" aria-hidden="true" style="position:relative; z-index:2; color:#9900ff; text-shadow:0 0 10px #ff00cc;">⬡</div>
+          </div>
+          <div class="equip-name" style="color:#ff00cc;">SHADOW INFUSION</div>
+          <div class="equip-desc">Permanent essence integration. Increases Critical Hit payout multiplier by <span class="hl-green">+0.1x</span> per level.</div>
+          <div class="equip-cost t-num" id="infusion-cost-display">100 <span style="font-size:12px;font-family:var(--font-mono);">GOLD</span></div>
+          <button class="buy-btn sys-btn-primary" id="buy-infusion-btn" data-action="buyItem" data-item="shadow_infusion">INFUSE (LV. <span id="infusion-lvl-display">0</span>)</button>
+        </div>
+
+      </div>
+
+    </section><!-- /page-arsenal -->
+
+    <!-- ═══ PROFILE TAB ═══ -->
+    <section id="page-profile" class="page spatial-node" aria-label="Hunter profile">
+
+      <!-- DYNAMIC THEMED BACKGROUND -->
+      <div class="dynamic-bg-layer" style="background-image: url('https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=1920&auto=format&fit=crop');"></div>
+
+      <div class="sys-label" style="position:relative; z-index:2;">HUNTER PROFILE</div>
+
+      <!-- Compact Hunter Card -->
+      <div class="hunter-card-compact" id="hunter-card" style="position:relative; z-index:2;">
+        <div class="hc-avatar">
+          <div class="hc-rank-badge" id="profile-rank-badge">K</div>
+        </div>
+        <div class="hc-info">
+          <div class="hc-name" id="profile-hunter-name">HUNTER</div>
+          <div class="hc-stats-row">
+            <span class="hc-stat">LVL <span id="profile-lvl">1</span></span>
+            <span class="hc-stat">STRK <span id="profile-streak">0</span></span>
+            <span class="hc-stat">GOLD <span id="profile-gold">0</span></span>
+          </div>
+          <div class="hc-xp-bar">
+            <div class="hc-xp-fill" id="profile-xp-fill" style="width:12%;"></div>
+          </div>
+          <div class="hc-next-unlock" id="profile-next-unlock">Strike unlocks at Level 2 — 88 XP away</div>
+        </div>
+      </div>
+
+      <!-- ACHIEVEMENTS -->
+      <div class="sys-label" style="position:relative; z-index:2;">TITLES &amp; ACHIEVEMENTS</div>
+      <div class="achievements-section" style="position:relative; z-index:2;">
+        <div class="achievements-grid" id="achievements-grid" role="list"></div>
+        <div class="achievements-empty" id="achievements-empty" style="display:none;">
+          <p>No achievements earned yet. Complete quests and maintain your streak to unlock titles.</p>
+        </div>
+      </div>
+
+      <!-- SKILL TREE -->
+      <div class="sys-label" style="position:relative; z-index:2;">PASSIVE SKILLS</div>
+      <div class="skill-tree-section" style="position:relative; z-index:2;">
+        <div class="skill-tree-wrap">
+          <div class="skill-tree-header">◆ HUNTER SKILL PROGRESSION</div>
+          <div class="skill-tree-body">
+            <div class="skill-branch">
+              <div class="skill-node active" id="sn-1">
+                <span class="skill-node-icon" aria-hidden="true">↯</span>
+                <span class="skill-node-label">Swift</span>
+                <div class="skill-node-tooltip">Unlock at Level 1 · Active</div>
+              </div>
+              <div class="skill-connector lit" id="sc-1"></div>
+              <div class="skill-node locked" id="sn-2">
+                <span class="skill-node-icon" aria-hidden="true">◈</span>
+                <span class="skill-node-label">Strike</span>
+                <div class="skill-node-tooltip">Unlock at Level 2</div>
+              </div>
+              <div class="skill-connector" id="sc-2"></div>
+              <div class="skill-node locked" id="sn-3">
+                <span class="skill-node-icon" aria-hidden="true">◆</span>
+                <span class="skill-node-label">Guard</span>
+                <div class="skill-node-tooltip">Unlock at Level 3</div>
+              </div>
+              <div class="skill-connector" id="sc-3"></div>
+              <div class="skill-node locked" id="sn-4">
+                <span class="skill-node-icon" aria-hidden="true">◇</span>
+                <span class="skill-node-label">Mana</span>
+                <div class="skill-node-tooltip">Unlock at Level 4</div>
+              </div>
+              <div class="skill-connector" id="sc-4"></div>
+              <div class="skill-node locked" id="sn-5">
+                <span class="skill-node-icon" aria-hidden="true">⬡</span>
+                <span class="skill-node-label">Shadow</span>
+                <div class="skill-node-tooltip">Unlock at Level 5 · Shadow Monarch</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DATA MANAGEMENT -->
+      <div class="sys-label" style="position:relative; z-index:2;">DATA MANAGEMENT</div>
+      <div class="data-section" style="position:relative; z-index:2;">
+        <div class="data-mgmt-row">
+          <button class="data-btn" data-action="exportData">⬇ EXPORT SAVE</button>
+          <button class="data-btn" data-action="importTrigger">⬆ IMPORT SAVE</button>
+          <input type="file" id="import-file-input" accept=".json" aria-label="Import save file" style="display:none;"/>
+        </div>
+        <div class="data-reset-section">
+          <button class="data-btn data-btn-danger" data-action="initiateReset">⚠ RESET PROFILE</button>
+          <p class="data-warning-note">Reset applies permanent penalties. This cannot be undone.</p>
+        </div>
+      </div>
+
+      <!-- Hunter Name Update -->
+      <div class="sys-label" style="position:relative; z-index:2;">HUNTER DESIGNATION</div>
+      <div class="profile-name-section" style="position:relative; z-index:2;">
+        <div class="quest-input-wrap">
+          <input class="sys-input" type="text" id="hunter-name-input-inline"
+                 placeholder="[ UPDATE HUNTER DESIGNATION... ]"
+                 maxlength="32" autocomplete="off" spellcheck="false"/>
+          <button class="quest-add-btn" data-action="updateHunterName" aria-label="Update hunter name">UPDATE</button>
+        </div>
+      </div>
+
+    </section><!-- /page-profile -->
+
+    </div><!-- /spatial-canvas -->
+  </div><!-- /system-viewport -->
+</div><!-- /app -->
+
+<button class="floating-action-orb" data-action="quickAddQuest" aria-label="Quick add quest">+</button>
+
+<!-- Hidden message element (accessibility / test) -->
+<div id="message" style="display:none;" aria-hidden="true"></div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     COMBO DISPLAY (Visual Engine)
+═══════════════════════════════════════════════════════════ -->
+<div id="combo-display" role="status" aria-live="polite">
+  <div class="combo-badge">
+    <span class="combo-count">0</span> CHAIN
+  </div>
+  <span class="combo-multiplier">x1.0</span>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     MOMENTUM BAR (Visual Engine)
+═══════════════════════════════════════════════════════════ -->
+<div id="momentum-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100">
+  <div class="momentum-fill" style="width: 0%;"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SCRIPTS — load order is critical
+═══════════════════════════════════════════════════════════ -->
+<script src="js/state.js"  defer></script>
+<script src="js/engine.js" defer></script>
+<script src="js/ui.js"     defer></script>
+<script src="js/images.js" defer></script>
+<script src="js/visual-engine.js" defer></script>
+<script src="js/adaptive-engine.js" defer></script>
+<script src="js/main.js"   defer></script>
+
+</body>
+</html>
