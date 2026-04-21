@@ -98,9 +98,22 @@ const VisualEngine = (() => {
     _lastFrame = now - (delta % _frameInterval);
     _currentFPS = Math.round(1000 / delta);
 
-    // === STEP 5 CORRECTION: CAPTURE EVENT ===
-    const event = window.__lastTaskEvent || null;
-    window.__lastTaskEvent = null;
+    let events = [];
+
+    // Prefer structured event queue
+    if (window.SystemEvents && typeof window.SystemEvents.consume === "function") {
+      events = window.SystemEvents.consume();
+    }
+
+    // Fallback to legacy single event
+    if ((!events || events.length === 0) && window.__lastTaskEvent) {
+      events = [{
+        type: window.__lastTaskEvent,
+        payload: {},
+        ts: Date.now()
+      }];
+      window.__lastTaskEvent = null;
+    }
 
     // Accessibility check: Skip expensive physics if reduced motion is enabled
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -119,7 +132,7 @@ const VisualEngine = (() => {
     // === STEP 5 CORRECTION: SINGLE UPDATE SOURCE ===
     const tickTime = performance.now();
     const baseState = {
-      event,
+      event: null,
       tasks: {
         inProgress: 0,
         lastCompletionTime: tickTime
@@ -130,13 +143,25 @@ const VisualEngine = (() => {
       instability: { level: 0 }
     };
 
-    // Single source: FlowSystem update
-    const flowResult = window.flowSystem ? window.flowSystem.update(baseState) : { flow: {} };
-    const flowState = flowResult.flow || {};
+    // If multiple events arrived this frame, process sequentially.
+    // If none arrived, preserve legacy behavior (single update with event=null).
+    const eventBatch = (events && events.length > 0) ? events : [{ type: null, payload: {}, ts: tickTime }];
 
-    // Single source: SprintSystem update
-    const sprintResult = window.sprintSystem ? window.sprintSystem.update(baseState) : { sprint: {} };
-    const sprintState = sprintResult.sprint || {};
+    let flowState = {};
+    let sprintState = {};
+
+    for (let i = 0; i < eventBatch.length; i++) {
+      const evt = eventBatch[i];
+      baseState.event = evt.type;
+
+      // Single source: FlowSystem update
+      const flowResult = window.flowSystem ? window.flowSystem.update(baseState) : { flow: {} };
+      flowState = flowResult.flow || {};
+
+      // Single source: SprintSystem update
+      const sprintResult = window.sprintSystem ? window.sprintSystem.update(baseState) : { sprint: {} };
+      sprintState = sprintResult.sprint || {};
+    }
 
     // Build clean systemState for ModeResolver
     const systemState = {

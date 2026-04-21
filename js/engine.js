@@ -67,6 +67,33 @@ window.sprintSystem = new SprintSystem();
 function round(n) { return Math.round(n * 100) / 100; }
 function todayISO() { return new Date().toISOString().split('T')[0]; }
 
+// SYSTEM EVENT DISPATCHER (centralized bridge)
+window.SystemEvents = window.SystemEvents || {
+  queue: [],
+  emit(type, payload = {}) {
+    this.queue.push({
+      type,
+      payload,
+      ts: Date.now()
+    });
+
+    window.__uiEventMirror = window.__uiEventMirror || [];
+    window.__uiEventMirror.push({
+      type,
+      payload,
+      ts: Date.now()
+    });
+
+    // Maintain backward compatibility
+    window.__lastTaskEvent = type;
+  },
+  consume() {
+    const events = [...this.queue];
+    this.queue.length = 0;
+    return events;
+  }
+};
+
 function getNextBestActionPlan(s) {
   const activeQuests = s.quests.filter(q => !q.completed && !q.failed).length;
   const failedQuests = s.quests.filter(q => q.failed).length;
@@ -354,7 +381,13 @@ function _executeQuestReward(s, quest, i, tier, xpGain, gldGain, isCrit, comboSt
   quest.completed = true;
 
   // === STEP 5 CORRECTION: EMIT SUCCESS EVENT ===
-  window.__lastTaskEvent = "success";
+  window.SystemEvents.emit("success", {
+    source: "quest",
+    xp: xpGain || 0,
+    gold: gldGain || 0,
+    title: quest?.name || "Quest",
+    tier: quest?.tier || tier || "unknown"
+  });
 
   s.xp   = round(Math.min(10000, s.xp + xpGain));
   s.gold = round(Math.min(5000, s.gold + gldGain));
@@ -467,7 +500,11 @@ function failQuest(i) {
   quest.failed = true;
 
   // === STEP 5 CORRECTION: EMIT FAILURE EVENT ===
-  window.__lastTaskEvent = "failure";
+  window.SystemEvents.emit("failure", {
+    source: "quest",
+    title: quest?.name || "Quest",
+    reason: "failed"
+  });
 
   G.save();
   ui.renderQuests(s);
@@ -546,6 +583,9 @@ function checkLevelUp() {
   if (s.level > prevLevel) {
     G.save();
     ui.triggerLevelUp(s.level);
+    window.SystemEvents.emit("levelup", {
+      level: G.state.level
+    });
   }
   ui.updateXPBar(s);
   ui.updateSkillTree(s);
@@ -572,6 +612,9 @@ function checkRankUp() {
     G.save();
     ui.triggerRankUp(s.rank, prevRank);
     ui.showToast('Cause: XP + Gold thresholds met. Effect: Rank promoted to ' + s.rank + '.', 'success');
+    window.SystemEvents.emit("rankup", {
+      rank: G.state.rank
+    });
   }
   ui.updateRankHex(s);
   ui.updateDungeonStatus(s);
@@ -678,6 +721,11 @@ function buyItem(item) {
     s.gold -= cost;
     s.shadowInfusionLevel++;
     G.save();
+
+    window.SystemEvents.emit("purchase", {
+      item: "Shadow Infusion",
+      cost: cost || 0
+    });
     
     ui.updateStatDisplays(s);
     ui.updateShopDisplay(s);
@@ -699,6 +747,11 @@ function buyItem(item) {
   s.gold -= cfg.cost;
   s[cfg.key] = true;
   G.save();
+
+  window.SystemEvents.emit("purchase", {
+    item: cfg?.name || "item",
+    cost: cfg?.cost || 0
+  });
   ui.updateStatDisplays(s);
   ui.updateShopDisplay(s);
   checkRankUp();

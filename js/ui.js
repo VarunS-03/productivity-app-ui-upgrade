@@ -8,6 +8,7 @@
 'use strict';
 
 const ui = (() => {
+  const ui = {};
 
   /* ── Utility ─────────────────────────────────────────────── */
   function $(id)  { return document.getElementById(id); }
@@ -96,7 +97,192 @@ const ui = (() => {
     if (hn) hn.textContent = s.hunter ? '[ ' + s.hunter.toUpperCase() + ' ]' : '';
 
     if (s.pendingGate) showBonusGateIndicator('Pending gate reward awaits');
+
+    ui.flushSystemLog();
   }
+
+  // === SYSTEM LOG CONTROLLER (STAGE 1 - SAFE) ===
+ui.systemLogController = {
+  
+  MAX_STREAM_ENTRIES: 60,
+
+  GROUP_WINDOW: 800,
+  lastMessage: "",
+  lastTime: 0,
+
+  now() {
+    return Date.now();
+  },
+
+  shouldGroup(message) {
+    const now = this.now();
+    const match =
+      message === this.lastMessage &&
+      (now - this.lastTime) < this.GROUP_WINDOW;
+
+    this.lastTime = now;
+
+    if (!match) {
+      this.lastMessage = message;
+    }
+
+    return match;
+  },
+
+  isCritical(type) {
+    return (
+      type === "failure" ||
+      type === "rankup" ||
+      type === "levelup"
+    );
+  }
+};
+
+  ui.renderSystemLog = function(events) {
+    const logContainer = document.querySelector('.system-log');
+    if (!logContainer || !events || events.length === 0) return;
+
+    // Ensure sub-zones exist (pinned + stream)
+    let pinnedZone = logContainer.querySelector('.system-log-pinned');
+    let streamZone = logContainer.querySelector('.system-log-stream');
+
+    if (!pinnedZone) {
+      pinnedZone = document.createElement('div');
+      pinnedZone.className = 'system-log-pinned';
+      logContainer.appendChild(pinnedZone);
+    }
+
+    if (!streamZone) {
+      streamZone = document.createElement('div');
+      streamZone.className = 'system-log-stream';
+      logContainer.appendChild(streamZone);
+    }
+
+    for (let i = 0; i < events.length; i++) {
+      const evt = events[i];
+
+      const entry = document.createElement('div');
+      let typeClass = evt.type || 'system';
+
+      if (evt.type === "success") typeClass = "success";
+      else if (evt.type === "failure") typeClass = "error";
+      else if (evt.type === "levelup") typeClass = "system";
+      else if (evt.type === "rankup") typeClass = "warning";
+      else if (evt.type === "purchase") typeClass = "system";
+
+      entry.className = 'log-entry ' + typeClass;
+
+      const time = document.createElement('span');
+      time.className = 'log-time';
+      time.textContent = '[' + new Date(evt.ts).toLocaleTimeString() + ']';
+
+      const text = document.createElement('span');
+      let message = "SYSTEM";
+
+      if (evt.type === "success") {
+        message = `QUEST COMPLETE: ${evt.payload?.title || "Unknown"} | +${evt.payload?.xp || 0} XP | +${evt.payload?.gold || 0} GOLD`;
+      }
+
+      else if (evt.type === "failure") {
+        message = `QUEST FAILED: ${evt.payload?.title || "Unknown"}`;
+      }
+
+      else if (evt.type === "levelup") {
+        message = `LEVEL UP → ${evt.payload?.level || "?"}`;
+      }
+
+      else if (evt.type === "rankup") {
+        message = `RANK PROMOTION → ${evt.payload?.rank || "?"}`;
+      }
+
+      else if (evt.type === "purchase") {
+        message = `PURCHASE: ${evt.payload?.item || "ITEM"} (-${evt.payload?.cost || 0} GOLD)`;
+      }
+
+      else {
+        message = evt.type ? evt.type.toUpperCase() : "SYSTEM";
+      }
+
+      text.textContent = message;
+
+      // De-duplication: prevent identical consecutive messages within 800ms
+      const now = Date.now();
+      const lastMsg = ui.systemLogController.lastMessage || "";
+      const lastTime = ui.systemLogController.lastTime || 0;
+
+      // Burst grouping: collapse identical messages within 800ms
+      if (message === lastMsg && (now - lastTime) < ui.systemLogController.GROUP_WINDOW) {
+        // For critical entries, grouping should target first element instead
+        const targetEntry = (
+          ui.systemLogController.isCritical(evt.type)
+        )
+          ? pinnedZone.lastElementChild
+          : streamZone.lastElementChild;
+
+        if (targetEntry) {
+          let counter = targetEntry.querySelector('.log-count');
+
+          if (!counter) {
+            counter = document.createElement('span');
+            counter.className = 'log-count';
+            counter.textContent = ' ×2';
+            targetEntry.appendChild(counter);
+          } else {
+            const current = parseInt(counter.textContent.replace(/\D/g, '')) || 1;
+            counter.textContent = ' ×' + (current + 1);
+          }
+        }
+
+        ui.systemLogController.lastTime = now;
+        continue;
+      }
+
+      ui.systemLogController.lastMessage = message;
+      ui.systemLogController.lastTime = now;
+
+      entry.appendChild(time);
+      entry.appendChild(text);
+
+      const isCritical =
+        ui.systemLogController.isCritical(evt.type);
+
+      if (isCritical) {
+        pinnedZone.appendChild(entry);
+      } else {
+        streamZone.appendChild(entry);
+      }
+
+      // === SEVERITY PULSE (one-frame emphasis) ===
+      if (
+        ui.systemLogController.isCritical(evt.type)
+      ) {
+        entry.classList.add('log-pulse');
+
+        // Force reflow (one-frame visual trigger)
+        void entry.offsetWidth;
+
+        entry.classList.remove('log-pulse');
+      }
+
+      const MAX_LOG_ENTRIES = ui.systemLogController.MAX_STREAM_ENTRIES;
+
+      while (streamZone.children.length > MAX_LOG_ENTRIES) {
+        streamZone.removeChild(streamZone.firstChild);
+      }
+    }
+
+    // Auto-scroll to bottom
+    streamZone.scrollTop = streamZone.scrollHeight;
+  };
+
+  ui.flushSystemLog = function() {
+    if (!window.__uiEventMirror || window.__uiEventMirror.length === 0) return;
+
+    const events = window.__uiEventMirror.slice();
+    window.__uiEventMirror.length = 0;
+
+    ui.renderSystemLog(events);
+  };
 
   function setHeaderStatus(text, online) {
     const el = $('header-status');
@@ -806,7 +992,7 @@ const ui = (() => {
   }
 
   /* Return public API */
-  return {
+  Object.assign(ui, {
     applyState, updateStatDisplays, updateXPBar, updateGoldBar,
     updateStreakBar, updateRankHex, updateQuickStats, updatePowerLevel,
     updateShadowCounter, updateProfileCard, updateSkillTree, updateShopDisplay,
@@ -818,6 +1004,10 @@ const ui = (() => {
     triggerLevelUp, triggerRankUp, spawnXPFloat, triggerCritHit,
     triggerQuestClearFlash, startEODTimer, rollNumber, bump,
     showFirstContactModal, hideFirstContactModal, dismissOnboarding,
-    toggleHqSection, getCurrentMissionAction, updateMissionControl
-  };
+    toggleHqSection, getCurrentMissionAction, updateMissionControl,
+    renderSystemLog: ui.renderSystemLog,
+    flushSystemLog: ui.flushSystemLog
+  });
+
+  return ui;
 })();
