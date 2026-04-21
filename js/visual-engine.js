@@ -50,6 +50,27 @@ const VisualEngine = (() => {
   let _momentumBurnTimer = null;
 
   /* ═══════════════════════════════════════════════════════════════════════
+     STEP 3: MODE RESOLVER INIT
+  ═══════════════════════════════════════════════════════════════════════ */
+  window.modeResolver = new ModeResolver();
+
+  /* ═══════════════════════════════════════════════════════════════════════
+     STEP 4: COMPONENT MANAGER INIT
+  ═══════════════════════════════════════════════════════════════════════ */
+  window.componentManager = new ComponentManager();
+
+  // === STEP 5 FIX: SAFE COMPONENT REGISTRATION ===
+  window.addEventListener("DOMContentLoaded", () => {
+    if (!window.__componentsRegistered) {
+      document.querySelectorAll("[data-component]").forEach(el => {
+        const name = el.getAttribute("data-component");
+        window.componentManager.register(name, el);
+      });
+      window.__componentsRegistered = true;
+    }
+  });
+
+  /* ═══════════════════════════════════════════════════════════════════════
      CENTRAL ANIMATION LOOP
   ═══════════════════════════════════════════════════════════════════════ */
   function start() {
@@ -76,10 +97,14 @@ const VisualEngine = (() => {
     
     _lastFrame = now - (delta % _frameInterval);
     _currentFPS = Math.round(1000 / delta);
-    
+
+    // === STEP 5 CORRECTION: CAPTURE EVENT ===
+    const event = window.__lastTaskEvent || null;
+    window.__lastTaskEvent = null;
+
     // Accessibility check: Skip expensive physics if reduced motion is enabled
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    
+
     if (!prefersReducedMotion) {
       // Update physics and particles only if motion is allowed
       _updateParticles(delta);
@@ -89,6 +114,49 @@ const VisualEngine = (() => {
         _activeParticles.forEach(p => { p.active = false; p.el.style.display = 'none'; });
         _activeParticles = [];
       }
+    }
+
+    // === STEP 5 CORRECTION: SINGLE UPDATE SOURCE ===
+    const tickTime = performance.now();
+    const baseState = {
+      event,
+      tasks: {
+        inProgress: 0,
+        lastCompletionTime: tickTime
+      },
+      flow: {},
+      sprint: {},
+      momentum: { score: 50 },
+      instability: { level: 0 }
+    };
+
+    // Single source: FlowSystem update
+    const flowResult = window.flowSystem ? window.flowSystem.update(baseState) : { flow: {} };
+    const flowState = flowResult.flow || {};
+
+    // Single source: SprintSystem update
+    const sprintResult = window.sprintSystem ? window.sprintSystem.update(baseState) : { sprint: {} };
+    const sprintState = sprintResult.sprint || {};
+
+    // Build clean systemState for ModeResolver
+    const systemState = {
+      flow: flowState,
+      sprint: sprintState,
+      momentum: {},
+      instability: {}
+    };
+
+    const resolvedMode = window.modeResolver.resolve(systemState);
+
+    // === STEP 3: APPLY MODE TO UI ===
+    if (resolvedMode && resolvedMode.dominant_mode) {
+      const mode = resolvedMode.dominant_mode;
+      document.body.setAttribute("data-mode", mode);
+    }
+
+    // === STEP 5 FIX: HARDENED COMPONENT MANAGER UPDATE ===
+    if (window.componentManager && resolvedMode && systemState) {
+      window.componentManager.update(resolvedMode, systemState);
     }
 
     _updateAmbient(delta);

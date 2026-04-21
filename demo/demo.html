@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AAA Productivity System - Demo</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .header {
+      padding: 16px 24px;
+      background: #1e293b;
+      border-bottom: 1px solid #334155;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .header h1 {
+      font-size: 18px;
+      font-weight: 600;
+      color: #f8fafc;
+    }
+
+    .fps-counter {
+      font-family: monospace;
+      font-size: 14px;
+      color: #94a3b8;
+    }
+
+    .main-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    #canvas-container {
+      flex: 1;
+      position: relative;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      overflow: hidden;
+    }
+
+    #render-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    #dom-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+
+    .controls-panel {
+      padding: 20px 24px;
+      background: #1e293b;
+      border-top: 1px solid #334155;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+    }
+
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .control-group h3 {
+      font-size: 12px;
+      text-transform: uppercase;
+      color: #94a3b8;
+      letter-spacing: 0.5px;
+    }
+
+    .button-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      background: #334155;
+      color: #e2e8f0;
+    }
+
+    button:hover {
+      background: #475569;
+      transform: translateY(-1px);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    button.primary {
+      background: #3b82f6;
+    }
+
+    button.primary:hover {
+      background: #2563eb;
+    }
+
+    button.success {
+      background: #22c55e;
+    }
+
+    button.success:hover {
+      background: #16a34a;
+    }
+
+    button.warning {
+      background: #f59e0b;
+    }
+
+    button.warning:hover {
+      background: #d97706;
+    }
+
+    button.danger {
+      background: #ef4444;
+    }
+
+    button.danger:hover {
+      background: #dc2626;
+    }
+
+    .status-panel {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 16px;
+      min-width: 200px;
+      font-family: monospace;
+      font-size: 12px;
+    }
+
+    .status-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 4px 0;
+      border-bottom: 1px solid #1e293b;
+    }
+
+    .status-row:last-child {
+      border-bottom: none;
+    }
+
+    .status-label {
+      color: #94a3b8;
+    }
+
+    .status-value {
+      color: #e2e8f0;
+      font-weight: 500;
+    }
+
+    .mode-indicator {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .mode-idle { background: #64748b; }
+    .mode-focus { background: #3b82f6; }
+    .mode-burst { background: #22c55e; }
+    .mode-hybrid { background: #8b5cf6; }
+    .mode-critical { background: #ef4444; }
+    .mode-recovery { background: #f59e0b; }
+
+    .test-info {
+      position: absolute;
+      bottom: 16px;
+      right: 16px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 12px;
+      color: #94a3b8;
+      max-width: 300px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>AAA State-Driven Productivity System</h1>
+    <div class="fps-counter" id="fps-display">FPS: --</div>
+  </div>
+
+  <div class="main-container">
+    <div id="canvas-container">
+      <canvas id="render-canvas"></canvas>
+      <div id="dom-overlay"></div>
+      
+      <div class="status-panel">
+        <div class="status-row">
+          <span class="status-label">Mode:</span>
+          <span class="status-value" id="status-mode">--</span>
+        </div>
+        <div class="status-row">
+          <span class="status-label">Momentum:</span>
+          <span class="status-value" id="status-momentum">--</span>
+        </div>
+        <div class="status-row">
+          <span class="status-label">Flow:</span>
+          <span class="status-value" id="status-flow">--</span>
+        </div>
+        <div class="status-row">
+          <span class="status-label">Instability:</span>
+          <span class="status-value" id="status-instability">--</span>
+        </div>
+        <div class="status-row">
+          <span class="status-label">Tasks:</span>
+          <span class="status-value" id="status-tasks">--</span>
+        </div>
+        <div class="status-row">
+          <span class="status-label">Sprint:</span>
+          <span class="status-value" id="status-sprint">--</span>
+        </div>
+      </div>
+
+      <div class="test-info" id="test-info">
+        Ready. Use controls to test scenarios.
+      </div>
+    </div>
+
+    <div class="controls-panel">
+      <div class="control-group">
+        <h3>Tasks</h3>
+        <div class="button-row">
+          <button class="success" onclick="demo.startTask()">Start Task</button>
+          <button class="primary" onclick="demo.completeTask()">Complete Task</button>
+          <button onclick="demo.endTask()">End Task</button>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <h3>Sprint</h3>
+        <div class="button-row">
+          <button class="primary" onclick="demo.startSprint()">Start Sprint (60s)</button>
+          <button onclick="demo.endSprint()">End Sprint</button>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <h3>Instability</h3>
+        <div class="button-row">
+          <button class="warning" onclick="demo.interruption()">Interruption</button>
+          <button class="danger" onclick="demo.criticalSpike()">Critical Spike</button>
+          <button class="danger" onclick="demo.overload()">Overload</button>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <h3>Test Scenarios</h3>
+        <div class="button-row">
+          <button onclick="demo.testIdleToBurst()">Idle → Burst</button>
+          <button onclick="demo.testFocusToCritical()">Focus → Critical</button>
+          <button onclick="demo.testRapidTasks()">Rapid Tasks</button>
+          <button onclick="demo.testLowFps()">Low FPS Sim</button>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <h3>System</h3>
+        <div class="button-row">
+          <button onclick="demo.reset()">Reset System</button>
+          <button onclick="demo.toggleDebug()">Toggle Debug</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { SystemLoop } from '../main/SystemLoop.js';
+
+    class DemoController {
+      constructor() {
+        this.canvas = document.getElementById('render-canvas');
+        this.container = document.getElementById('dom-overlay');
+        
+        // Resize canvas
+        this.resizeCanvas();
+        window.addEventListener('resize', () => this.resizeCanvas());
+
+        // Initialize system
+        this.system = new SystemLoop(this.canvas, this.container);
+        this.system.start();
+
+        // Status update interval
+        setInterval(() => this.updateStatus(), 100);
+
+        // Test tracking
+        this.testActive = false;
+        this.updateTestInfo('System ready. Click buttons to test scenarios.');
+      }
+
+      resizeCanvas() {
+        const container = document.getElementById('canvas-container');
+        this.canvas.width = container.clientWidth;
+        this.canvas.height = container.clientHeight;
+      }
+
+      updateStatus() {
+        const state = this.system.getState();
+        const stats = this.system.getStats();
+
+        // Update FPS
+        document.getElementById('fps-display').textContent = `FPS: ${stats.fps}`;
+
+        // Update mode with styling
+        const modeEl = document.getElementById('status-mode');
+        modeEl.innerHTML = `<span class="mode-indicator mode-${state.flow.mode || 'idle'}">${this.system.getMode()}</span>`;
+
+        // Update metrics
+        document.getElementById('status-momentum').textContent = `${state.momentum.score} (${state.momentum.trend})`;
+        document.getElementById('status-flow').textContent = `${state.flow.depth}%${state.flow.inFlow ? ' ✓' : ''}`;
+        document.getElementById('status-instability').textContent = `${state.instability.level}%${state.instability.isCritical ? ' !' : ''}`;
+        document.getElementById('status-tasks').textContent = `✓${state.tasks.completed} →${state.tasks.inProgress} ○${state.tasks.pending}`;
+        document.getElementById('status-sprint').textContent = state.sprint.active ? `Active (${Math.round(state.sprint.progress * 100)}%)` : 'Inactive';
+      }
+
+      updateTestInfo(message) {
+        document.getElementById('test-info').textContent = message;
+      }
+
+      // ============ TASK ACTIONS ============
+
+      startTask() {
+        this.system.taskStarted();
+        this.updateTestInfo('Task started');
+      }
+
+      completeTask() {
+        this.system.taskCompleted();
+        this.updateTestInfo('Task completed!');
+      }
+
+      endTask() {
+        this.system.taskEnded();
+        this.updateTestInfo('Task ended');
+      }
+
+      // ============ SPRINT ACTIONS ============
+
+      startSprint() {
+        this.system.startSprint(60000); // 60 second sprint
+        this.updateTestInfo('Sprint started (60s)');
+      }
+
+      endSprint() {
+        this.system.endSprint();
+        this.updateTestInfo('Sprint ended');
+      }
+
+      // ============ INSTABILITY ACTIONS ============
+
+      interruption() {
+        this.system.recordInterruption();
+        this.updateTestInfo('Interruption recorded');
+      }
+
+      criticalSpike() {
+        this.system.triggerInstability('INTERRUPTION');
+        this.system.triggerInstability('ERROR');
+        this.updateTestInfo('CRITICAL spike triggered!');
+      }
+
+      overload() {
+        this.system.triggerInstability('OVERLOAD');
+        this.updateTestInfo('Overload triggered');
+      }
+
+      // ============ TEST SCENARIOS ============
+
+      async testIdleToBurst() {
+        if (this.testActive) return;
+        this.testActive = true;
+        this.updateTestInfo('TEST: Idle → Burst... Starting');
+
+        // Reset
+        this.system.reset();
+        await this.sleep(500);
+
+        // Idle state
+        this.updateTestInfo('TEST: System idle...');
+        await this.sleep(2000);
+
+        // Start sprint + rapid tasks
+        this.updateTestInfo('TEST: Triggering burst...');
+        this.system.startSprint(30000);
+        
+        // Complete multiple tasks quickly
+        for (let i = 0; i < 8; i++) {
+          this.system.taskStarted();
+          await this.sleep(200);
+          this.system.taskCompleted();
+        }
+
+        this.updateTestInfo('TEST: Idle → Burst complete! Check mode transition.');
+        this.testActive = false;
+      }
+
+      async testFocusToCritical() {
+        if (this.testActive) return;
+        this.testActive = true;
+        this.updateTestInfo('TEST: Focus → Hybrid → Critical...');
+
+        this.system.reset();
+        await this.sleep(500);
+
+        // Establish focus
+        this.updateTestInfo('TEST: Building focus...');
+        this.system.taskStarted();
+        for (let i = 0; i < 5; i++) {
+          await this.sleep(300);
+          this.system.taskStarted();
+          await this.sleep(300);
+          this.system.taskCompleted();
+        }
+
+        await this.sleep(1000);
+
+        // Hybrid state
+        this.updateTestInfo('TEST: Entering hybrid...');
+        this.system.startSprint(30000);
+        await this.sleep(1500);
+
+        // Critical state
+        this.updateTestInfo('TEST: Triggering CRITICAL...');
+        this.system.triggerInstability('INTERRUPTION');
+        await this.sleep(100);
+        this.system.triggerInstability('ERROR');
+        await this.sleep(100);
+        this.system.triggerInstability('TIMEOUT');
+        await this.sleep(100);
+        this.system.recordInterruption();
+
+        this.updateTestInfo('TEST: Focus → Critical complete!');
+        this.testActive = false;
+      }
+
+      async testRapidTasks() {
+        if (this.testActive) return;
+        this.testActive = true;
+        this.updateTestInfo('TEST: Rapid task spam (anti-jitter)...');
+
+        this.system.reset();
+        await this.sleep(500);
+
+        // Spam tasks to test dampening
+        this.updateTestInfo('TEST: Spamming 15 tasks in 2 seconds...');
+        for (let i = 0; i < 15; i++) {
+          this.system.taskStarted();
+          this.system.taskCompleted();
+          await this.sleep(150);
+        }
+
+        this.updateTestInfo('TEST: Anti-jitter test complete. Check transitions.');
+        this.testActive = false;
+      }
+
+      testLowFps() {
+        this.updateTestInfo('TEST: Simulating low FPS (10 FPS)...');
+        this.system.setTargetFps(10);
+        
+        setTimeout(() => {
+          this.system.setTargetFps(60);
+          this.updateTestInfo('TEST: Low FPS sim ended. Restored 60 FPS.');
+        }, 5000);
+      }
+
+      // ============ SYSTEM ACTIONS ============
+
+      reset() {
+        this.system.reset();
+        this.system.setTargetFps(60);
+        this.updateTestInfo('System reset complete');
+      }
+
+      toggleDebug() {
+        console.log('Current state:', this.system.getState());
+        console.log('Render stats:', this.system.getStats());
+        this.updateTestInfo('Debug info logged to console');
+      }
+
+      sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+      }
+    }
+
+    // Initialize demo
+    const demo = new DemoController();
+    window.demo = demo; // Make available for onclick handlers
+  </script>
+</body>
+</html>

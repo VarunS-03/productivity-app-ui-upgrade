@@ -148,10 +148,10 @@
 ═══════════════════════════════════════════════════════════ -->
 <!-- Screen flash overlay for AAA visual impact -->
 <div id="screen-flash" class="screen-flash-layer"></div>
-<div id="app">
+<div id="app" data-component="root">
 
-  <div id="system-viewport">
-    <div id="monarch-hud" aria-hidden="false">
+  <div id="system-viewport" data-component="viewport">
+    <div id="monarch-hud" aria-hidden="false" data-component="hud">
       <div class="hud-corner top-left"></div>
       <div class="hud-corner top-right"></div>
 
@@ -201,7 +201,7 @@
     <div id="spatial-canvas">
 
     <!-- ═══ HQ TAB ═══ -->
-    <main id="page-hq" class="page spatial-node" role="main">
+    <main id="page-hq" class="page spatial-node" role="main" data-component="hq">
       <div class="hq-main-column">
         <!-- Daily Login Gate - appears only when not logged in today -->
         <section class="awakening-gate" id="awakening-gate" aria-live="polite">
@@ -381,7 +381,7 @@
     </main><!-- /page-hq -->
 
     <!-- ═══ QUESTS TAB ═══ -->
-    <section id="page-quests" class="page spatial-node" aria-label="Daily quests">
+    <section id="page-quests" class="page spatial-node" aria-label="Daily quests" data-component="quests">
 
       <!-- DYNAMIC THEMED BACKGROUND -->
       <div class="dynamic-bg-layer" style="background-image: url('https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=1920&auto=format&fit=crop');"></div>
@@ -440,7 +440,7 @@
     </section><!-- /page-quests -->
 
     <!-- ═══ DUNGEON TAB ═══ -->
-    <section id="page-dungeon" class="page spatial-node" aria-label="Dungeon">
+    <section id="page-dungeon" class="page spatial-node" aria-label="Dungeon" data-component="dungeon">
 
       <!-- DYNAMIC THEMED BACKGROUND -->
       <div class="dynamic-bg-layer" style="background-image: url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1920&auto=format&fit=crop');"></div>
@@ -519,7 +519,7 @@
     </section><!-- /page-dungeon -->
 
     <!-- ═══ ARSENAL TAB ═══ -->
-    <section id="page-arsenal" class="page spatial-node" aria-label="Arsenal and shop">
+    <section id="page-arsenal" class="page spatial-node" aria-label="Arsenal and shop" data-component="arsenal">
 
       <!-- DYNAMIC THEMED BACKGROUND -->
       <div class="dynamic-bg-layer" style="background-image: url('https://images.unsplash.com/photo-1552820728-8b83bb6b773f?q=80&w=1920&auto=format&fit=crop');"></div>
@@ -591,7 +591,7 @@
     </section><!-- /page-arsenal -->
 
     <!-- ═══ PROFILE TAB ═══ -->
-    <section id="page-profile" class="page spatial-node" aria-label="Hunter profile">
+    <section id="page-profile" class="page spatial-node" aria-label="Hunter profile" data-component="profile">
 
       <!-- DYNAMIC THEMED BACKGROUND -->
       <div class="dynamic-bg-layer" style="background-image: url('https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=1920&auto=format&fit=crop');"></div>
@@ -723,13 +723,39 @@
 <!-- ═══════════════════════════════════════════════════════════
      SCRIPTS — load order is critical
 ═══════════════════════════════════════════════════════════ -->
+
+<!-- Config must load first -->
+<script src="config/Config.js"></script>
+
+<!-- Core Systems -->
+<script src="core/StateEngine.js"></script>
+<script src="core/ModeResolver.js"></script>
+<script src="core/ComponentManager.js"></script>
+<script src="core/TransitionManager.js"></script>
+
+<!-- Subsystems -->
+<script src="systems/TimerSystem.js"></script>
+<script src="systems/FlowSystem.js"></script>
+<script src="systems/SprintSystem.js"></script>
+<script src="systems/MomentumSystem.js"></script>
+<script src="systems/DecaySystem.js"></script>
+<script src="systems/InstabilitySystem.js"></script>
+
+<!-- Render -->
+<script src="render/RenderRegistry.js"></script>
+<script src="render/RenderLayer.js"></script>
+
+<!-- Main System Loop -->
+<script src="main/SystemLoop.js"></script>
+
+<!-- Original App Scripts -->
 <script src="js/state.js"  defer></script>
 <script src="js/engine.js" defer></script>
 <script src="js/ui.js"     defer></script>
 <script src="js/images.js" defer></script>
 <script src="js/visual-engine.js" defer></script>
 <script src="js/adaptive-engine.js" defer></script>
-<script src="js/main.js"   defer></script>
+<script src="js/main.js"></script>
 
 </body>
 </html>

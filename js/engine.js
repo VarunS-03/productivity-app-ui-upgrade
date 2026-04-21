@@ -59,6 +59,10 @@ const SKILL_NODES = [
   { id:'sn-5', req:5, label:'Shadow', icon:'⬡', con:null   },
 ];
 
+/* ── Step 2: System Initialization ─────────────────────── */
+window.flowSystem = new FlowSystem();
+window.sprintSystem = new SprintSystem();
+
 /* ── Util ────────────────────────────────────────────────── */
 function round(n) { return Math.round(n * 100) / 100; }
 function todayISO() { return new Date().toISOString().split('T')[0]; }
@@ -348,6 +352,10 @@ function _executeQuestReward(s, quest, i, tier, xpGain, gldGain, isCrit, comboSt
   s.gold = Math.max(0, Math.min(5000, s.gold));
 
   quest.completed = true;
+
+  // === STEP 5 CORRECTION: EMIT SUCCESS EVENT ===
+  window.__lastTaskEvent = "success";
+
   s.xp   = round(Math.min(10000, s.xp + xpGain));
   s.gold = round(Math.min(5000, s.gold + gldGain));
   s.questsCompletedTotal = Math.min(10000, (s.questsCompletedTotal || 0) + 1);
@@ -457,6 +465,10 @@ function failQuest(i) {
   if (!quest || quest.completed || quest.failed) return;
 
   quest.failed = true;
+
+  // === STEP 5 CORRECTION: EMIT FAILURE EVENT ===
+  window.__lastTaskEvent = "failure";
+
   G.save();
   ui.renderQuests(s);
   ui.showToast('Cause: Quest marked failed. Effect: End-of-day penalty risk increased.','error');
